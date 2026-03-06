@@ -1,0 +1,768 @@
+package section5
+
+import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strconv"
+	"strings"
+
+	"github.com/pgharden/pgharden/internal/checker"
+	"github.com/pgharden/pgharden/internal/hba"
+	"github.com/pgharden/pgharden/internal/netmask"
+)
+
+func init() {
+	checker.Register(&check51{})
+	checker.Register(&check5_2{})
+	checker.Register(&check53{})
+	checker.Register(&check54{})
+	checker.Register(&check5_5{})
+	checker.Register(&check5_6{})
+	checker.Register(&check5_7{})
+	checker.Register(&check58{})
+	checker.Register(&check59{})
+	checker.Register(&check510{})
+	checker.Register(&check511{})
+	checker.Register(&check5_12{})
+}
+
+// ensureHBA loads the HBA entries into env if not already loaded.
+func ensureHBA(ctx context.Context, env *checker.Environment) error {
+	if env.HBALoaded {
+		return nil
+	}
+	if env.PGVersion >= 15 {
+		entries, err := hba.LoadFromSQL(ctx, env.DB)
+		if err == nil {
+			env.HBAEntries = entries
+			env.HBALoaded = true
+			return nil
+		}
+	}
+	if env.HasFilesystem {
+		var hbaFile string
+		if err := env.DB.QueryRow(ctx, "SHOW hba_file").Scan(&hbaFile); err == nil && hbaFile != "" {
+			entries, err := hba.LoadFromFile(hbaFile)
+			if err == nil {
+				env.HBAEntries = entries
+				env.HBALoaded = true
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("cannot load pg_hba.conf")
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.1
+// ---------------------------------------------------------------------------
+
+type check51 struct{}
+
+func (c *check51) ID() string { return "5.1" }
+
+func (c *check51) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{Commands: []string{"ps"}}
+}
+
+func (c *check51) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+
+	out, err := exec.CommandContext(ctx, "ps", "-ef").CombinedOutput()
+	if err != nil {
+		result.Status = checker.StatusSkipped
+		result.SkipReason = "Cannot run ps: " + err.Error()
+		return result, nil
+	}
+
+	var found []string
+	for line := range strings.SplitSeq(string(out), "\n") {
+		lower := strings.ToLower(line)
+		if strings.Contains(lower, "pgpassword") || strings.Contains(lower, "password=") {
+			found = append(found, strings.TrimSpace(line))
+		}
+	}
+
+	if len(found) > 0 {
+		result.Status = checker.StatusFail
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "CRITICAL",
+			Content: "Password(s) found in process listings",
+		})
+		result.Details = [][]string{{"Process"}}
+		for _, f := range found {
+			result.Details = append(result.Details, []string{f})
+		}
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "No passwords found in process listings",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.2
+// ---------------------------------------------------------------------------
+
+type check5_2 struct{}
+
+func (c *check5_2) ID() string { return "5.2" }
+
+func (c *check5_2) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{SQLOnly: true}
+}
+
+func (c *check5_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var listenAddr string
+	err := env.DB.QueryRow(ctx, "SHOW listen_addresses").Scan(&listenAddr)
+	if err != nil {
+		return nil, fmt.Errorf("query listen_addresses: %w", err)
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+
+	if listenAddr == "*" || listenAddr == "0.0.0.0" {
+		result.Status = checker.StatusFail
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "CRITICAL",
+			Content: fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr),
+		})
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: fmt.Sprintf("listen_addresses is set to '%s'.", listenAddr),
+		})
+	}
+
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.3
+// ---------------------------------------------------------------------------
+
+type check53 struct{}
+
+func (c *check53) ID() string { return "5.3" }
+
+func (c *check53) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{}
+}
+
+func (c *check53) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityCritical,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	hasFail := false
+	hasWarn := false
+
+	for _, entry := range env.HBAEntries {
+		if entry.Type != "local" {
+			continue
+		}
+
+		sec := hba.ClassifyAuthMethod(entry.Method)
+		switch sec {
+		case hba.AuthForbidden:
+			hasFail = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "CRITICAL",
+				Content: fmt.Sprintf("Line %d: local connection uses insecure auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User),
+			})
+		case hba.AuthWeak:
+			hasWarn = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "WARNING",
+				Content: fmt.Sprintf("Line %d: local connection uses weak auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User),
+			})
+		}
+	}
+
+	if hasFail {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityCritical
+	} else if hasWarn {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityWarning
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All local connections use secure authentication",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.4
+// ---------------------------------------------------------------------------
+
+type check54 struct{}
+
+func (c *check54) ID() string { return "5.4" }
+
+func (c *check54) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{}
+}
+
+func (c *check54) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityCritical,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	hasFail := false
+	hasWarn := false
+
+	for _, entry := range env.HBAEntries {
+		if !strings.HasPrefix(entry.Type, "host") {
+			continue
+		}
+
+		sec := hba.ClassifyAuthMethod(entry.Method)
+		switch sec {
+		case hba.AuthForbidden:
+			hasFail = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "CRITICAL",
+				Content: fmt.Sprintf("Line %d: host connection uses insecure auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address),
+			})
+		case hba.AuthWeak:
+			hasWarn = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "WARNING",
+				Content: fmt.Sprintf("Line %d: host connection uses weak auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address),
+			})
+		}
+	}
+
+	if hasFail {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityCritical
+	} else if hasWarn {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityWarning
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All host connections use secure authentication",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.5
+// ---------------------------------------------------------------------------
+
+type check5_5 struct{}
+
+func (c *check5_5) ID() string { return "5.5" }
+
+func (c *check5_5) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{SQLOnly: true}
+}
+
+func (c *check5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	rows, err := env.DB.Query(ctx,
+		"SELECT rolname, rolconnlimit FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1")
+	if err != nil {
+		return nil, fmt.Errorf("query connection limits: %w", err)
+	}
+	defer rows.Close()
+
+	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+
+	details := [][]string{{"Role", "Connection Limit"}}
+	count := 0
+	for rows.Next() {
+		var name string
+		var connLimit int
+		if err := rows.Scan(&name, &connLimit); err != nil {
+			return nil, fmt.Errorf("scan role: %w", err)
+		}
+		details = append(details, []string{name, "unlimited"})
+		count++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate roles: %w", err)
+	}
+
+	if count == 0 {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All login roles have connection limits configured.",
+		})
+	} else {
+		result.Status = checker.StatusFail
+		result.Details = details
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "WARNING",
+			Content: fmt.Sprintf("Found %d login roles with no connection limit set.", count),
+		})
+	}
+
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.6
+// ---------------------------------------------------------------------------
+
+type check5_6 struct{}
+
+func (c *check5_6) ID() string { return "5.6" }
+
+func (c *check5_6) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{SQLOnly: true}
+}
+
+func (c *check5_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var libs string
+	err := env.DB.QueryRow(ctx, "SHOW shared_preload_libraries").Scan(&libs)
+	if err != nil {
+		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+
+	libsLower := strings.ToLower(libs)
+	hasCredcheck := strings.Contains(libsLower, "credcheck")
+	hasPasswordcheck := strings.Contains(libsLower, "passwordcheck")
+
+	if hasCredcheck || hasPasswordcheck {
+		result.Status = checker.StatusPass
+		found := "credcheck"
+		if hasPasswordcheck {
+			found = "passwordcheck"
+		}
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: fmt.Sprintf("Password complexity module '%s' is loaded in shared_preload_libraries.", found),
+		})
+	} else {
+		result.Status = checker.StatusFail
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "WARNING",
+			Content: fmt.Sprintf("No password complexity module found in shared_preload_libraries ('%s'). Install 'credcheck' or 'passwordcheck'.", libs),
+		})
+	}
+
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.7
+// ---------------------------------------------------------------------------
+
+type check5_7 struct{}
+
+func (c *check5_7) ID() string { return "5.7" }
+
+func (c *check5_7) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{SQLOnly: true}
+}
+
+func (c *check5_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var authTimeout string
+	err := env.DB.QueryRow(ctx, "SHOW authentication_timeout").Scan(&authTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("query authentication_timeout: %w", err)
+	}
+
+	var libs string
+	err = env.DB.QueryRow(ctx, "SHOW shared_preload_libraries").Scan(&libs)
+	if err != nil {
+		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+
+	// Parse timeout value (given in seconds as a string)
+	timeoutSec, parseErr := strconv.Atoi(strings.TrimSuffix(authTimeout, "s"))
+	if parseErr != nil {
+		return nil, fmt.Errorf("parse authentication_timeout '%s': %w", authTimeout, parseErr)
+	}
+
+	hasAuthDelay := strings.Contains(strings.ToLower(libs), "auth_delay")
+	failed := false
+
+	if timeoutSec > 60 {
+		failed = true
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "WARNING",
+			Content: fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec),
+		})
+	} else {
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: fmt.Sprintf("authentication_timeout is %ds.", timeoutSec),
+		})
+	}
+
+	if !hasAuthDelay {
+		failed = true
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "WARNING",
+			Content: "auth_delay is not loaded in shared_preload_libraries.",
+		})
+	} else {
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "auth_delay is loaded in shared_preload_libraries.",
+		})
+	}
+
+	if failed {
+		result.Status = checker.StatusFail
+	} else {
+		result.Status = checker.StatusPass
+	}
+
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.8
+// ---------------------------------------------------------------------------
+
+type check58 struct{}
+
+func (c *check58) ID() string { return "5.8" }
+
+func (c *check58) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{}
+}
+
+func (c *check58) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityCritical,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	hasFail := false
+
+	for _, entry := range env.HBAEntries {
+		// Only flag plain "host" entries (not hostssl, hostgssenc)
+		if entry.Type != "host" {
+			continue
+		}
+
+		// Skip localhost connections
+		addr := entry.Address
+		if addr == "127.0.0.1/32" || addr == "::1/128" || addr == "localhost" || addr == "127.0.0.1" || addr == "::1" {
+			continue
+		}
+
+		// Skip reject method
+		if entry.Method == "reject" {
+			continue
+		}
+
+		hasFail = true
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "CRITICAL",
+			Content: fmt.Sprintf("Line %d: plain 'host' connection without SSL/GSSENC (db=%s, user=%s, addr=%s, method=%s)", entry.LineNumber, entry.Database, entry.User, addr, entry.Method),
+		})
+	}
+
+	if hasFail {
+		result.Status = checker.StatusFail
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All non-local host connections use SSL or GSSENC",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.9
+// ---------------------------------------------------------------------------
+
+type check59 struct{}
+
+func (c *check59) ID() string { return "5.9" }
+
+func (c *check59) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{}
+}
+
+func (c *check59) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityCritical,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	hasCritical := false
+	hasWarning := false
+
+	for _, entry := range env.HBAEntries {
+		if !strings.HasPrefix(entry.Type, "host") {
+			continue
+		}
+		if entry.Method == "reject" {
+			continue
+		}
+
+		addr := entry.Address
+		if addr == "" {
+			continue
+		}
+
+		// Build CIDR string
+		cidr := addr
+		if entry.Netmask != "" && !strings.Contains(cidr, "/") {
+			cidr = addr + " " + entry.Netmask
+		}
+
+		// Check for all-addresses patterns
+		if addr == "0.0.0.0/0" || addr == "::/0" || addr == "all" {
+			hasCritical = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "CRITICAL",
+				Content: fmt.Sprintf("Line %d: unrestricted network range '%s' (db=%s, user=%s)", entry.LineNumber, addr, entry.Database, entry.User),
+			})
+			continue
+		}
+
+		size, err := netmask.NetworkSize(cidr)
+		if err != nil {
+			continue
+		}
+
+		if size > 65536 {
+			hasWarning = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "WARNING",
+				Content: fmt.Sprintf("Line %d: large CIDR range '%s' covers %d addresses (db=%s, user=%s)", entry.LineNumber, cidr, size, entry.Database, entry.User),
+			})
+		}
+	}
+
+	if hasCritical {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityCritical
+	} else if hasWarning {
+		result.Status = checker.StatusFail
+		result.Severity = checker.SeverityWarning
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All CIDR ranges are appropriately scoped",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.10
+// ---------------------------------------------------------------------------
+
+type check510 struct{}
+
+func (c *check510) ID() string { return "5.10" }
+
+func (c *check510) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{}
+}
+
+func (c *check510) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityWarning,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	hasWarning := false
+
+	for _, entry := range env.HBAEntries {
+		// Skip reject rules -- they're fine with 'all'
+		if entry.Method == "reject" {
+			continue
+		}
+
+		if entry.Database == "all" {
+			hasWarning = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "WARNING",
+				Content: fmt.Sprintf("Line %d: database='all' is overly broad (user=%s, type=%s, method=%s)", entry.LineNumber, entry.User, entry.Type, entry.Method),
+			})
+		}
+		if entry.User == "all" {
+			hasWarning = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "WARNING",
+				Content: fmt.Sprintf("Line %d: user='all' is overly broad (db=%s, type=%s, method=%s)", entry.LineNumber, entry.Database, entry.Type, entry.Method),
+			})
+		}
+	}
+
+	if hasWarning {
+		result.Status = checker.StatusFail
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "All HBA entries specify explicit databases and users",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.11
+// ---------------------------------------------------------------------------
+
+type check511 struct{}
+
+func (c *check511) ID() string { return "5.11" }
+
+func (c *check511) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{Superuser: true}
+}
+
+func (c *check511) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return &checker.CheckResult{
+			Status:     checker.StatusSkipped,
+			Severity:   checker.SeverityCritical,
+			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+		}, nil
+	}
+
+	// Load superuser list if not cached
+	if len(env.Superusers) == 0 {
+		rows, err := env.DB.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper = true")
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				return nil, err
+			}
+			env.Superusers = append(env.Superusers, name)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+
+	superSet := make(map[string]bool)
+	for _, su := range env.Superusers {
+		superSet[su] = true
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	hasFail := false
+
+	for _, entry := range env.HBAEntries {
+		// Only check remote connection types
+		if !strings.HasPrefix(entry.Type, "host") {
+			continue
+		}
+		if entry.Method == "reject" {
+			continue
+		}
+
+		// Check if this entry allows a superuser
+		user := entry.User
+		if user == "all" {
+			// 'all' includes superusers
+			hasFail = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "CRITICAL",
+				Content: fmt.Sprintf("Line %d: user='all' allows superuser remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, entry.Type, entry.Address, entry.Method),
+			})
+		} else if superSet[user] {
+			hasFail = true
+			result.Messages = append(result.Messages, checker.Message{
+				Level:   "CRITICAL",
+				Content: fmt.Sprintf("Line %d: superuser '%s' has remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, user, entry.Type, entry.Address, entry.Method),
+			})
+		}
+	}
+
+	if hasFail {
+		result.Status = checker.StatusFail
+	} else {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "Superuser connections are restricted to local access only",
+		})
+	}
+	return result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Check 5.12
+// ---------------------------------------------------------------------------
+
+type check5_12 struct{}
+
+func (c *check5_12) ID() string { return "5.12" }
+
+func (c *check5_12) Requirements() checker.CheckRequirements {
+	return checker.CheckRequirements{SQLOnly: true}
+}
+
+func (c *check5_12) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var passEnc string
+	err := env.DB.QueryRow(ctx, "SHOW password_encryption").Scan(&passEnc)
+	if err != nil {
+		return nil, fmt.Errorf("query password_encryption: %w", err)
+	}
+
+	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+
+	if passEnc == "scram-sha-256" {
+		result.Status = checker.StatusPass
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "SUCCESS",
+			Content: "password_encryption is set to 'scram-sha-256'.",
+		})
+	} else {
+		result.Status = checker.StatusFail
+		result.Messages = append(result.Messages, checker.Message{
+			Level:   "CRITICAL",
+			Content: fmt.Sprintf("password_encryption is set to '%s' (should be 'scram-sha-256').", passEnc),
+		})
+	}
+
+	return result, nil
+}
