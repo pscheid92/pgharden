@@ -11,27 +11,27 @@ import (
 )
 
 func init() {
-	checker.Register(&check41{})
-	checker.Register(&check4_3{})
-	checker.Register(&check4_4{})
-	checker.Register(&check4_5{})
-	checker.Register(&check4_6{})
-	checker.Register(&check4_7{})
-	checker.Register(&check4_8{})
-	checker.Register(&check4_10{})
+	checker.Register(&check_4_1{})
+	checker.Register(&check_4_3{})
+	checker.Register(&check_4_4{})
+	checker.Register(&check_4_5{})
+	checker.Register(&check_4_6{})
+	checker.Register(&check_4_7{})
+	checker.Register(&check_4_8{})
+	checker.Register(&check_4_10{})
 }
 
 // --- Check 4.1 ---
 
-type check41 struct{}
+type check_4_1 struct{}
 
-func (c *check41) ID() string { return "4.1" }
+func (c *check_4_1) ID() string { return "4.1" }
 
-func (c *check41) Requirements() checker.CheckRequirements {
+func (c *check_4_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check41) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	f, err := os.Open("/etc/passwd")
@@ -83,15 +83,15 @@ func (c *check41) Run(ctx context.Context, env *checker.Environment) (*checker.C
 
 // --- Check 4.3 ---
 
-type check4_3 struct{}
+type check_4_3 struct{}
 
-func (c *check4_3) ID() string { return "4.3" }
+func (c *check_4_3) ID() string { return "4.3" }
 
-func (c *check4_3) Requirements() checker.CheckRequirements {
+func (c *check_4_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
 	if err != nil {
 		return nil, fmt.Errorf("query superusers: %w", err)
@@ -135,15 +135,15 @@ func (c *check4_3) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.4 ---
 
-type check4_4 struct{}
+type check_4_4 struct{}
 
-func (c *check4_4) ID() string { return "4.4" }
+func (c *check_4_4) ID() string { return "4.4" }
 
-func (c *check4_4) Requirements() checker.CheckRequirements {
+func (c *check_4_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT rolname, rolconnlimit FROM pg_roles WHERE rolcanlogin AND NOT rolsuper ORDER BY rolname")
 	if err != nil {
@@ -186,15 +186,15 @@ func (c *check4_4) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.5 ---
 
-type check4_5 struct{}
+type check_4_5 struct{}
 
-func (c *check4_5) ID() string { return "4.5" }
+func (c *check_4_5) ID() string { return "4.5" }
 
-func (c *check4_5) Requirements() checker.CheckRequirements {
+func (c *check_4_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT n.nspname, p.proname, r.rolname, p.prosecdef, p.proconfig
 		FROM pg_proc p
@@ -254,15 +254,15 @@ func (c *check4_5) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.6 ---
 
-type check4_6 struct{}
+type check_4_6 struct{}
 
-func (c *check4_6) ID() string { return "4.6" }
+func (c *check_4_6) ID() string { return "4.6" }
 
-func (c *check4_6) Requirements() checker.CheckRequirements {
+func (c *check_4_6) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT grantee, table_schema, table_name, privilege_type
 		FROM information_schema.table_privileges
@@ -311,15 +311,15 @@ func (c *check4_6) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.7 ---
 
-type check4_7 struct{}
+type check_4_7 struct{}
 
-func (c *check4_7) ID() string { return "4.7" }
+func (c *check_4_7) ID() string { return "4.7" }
 
-func (c *check4_7) Requirements() checker.CheckRequirements {
+func (c *check_4_7) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT n.nspname, c.relname, c.relrowsecurity, c.relforcerowsecurity
 		FROM pg_class c
@@ -366,23 +366,15 @@ func (c *check4_7) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.8 ---
 
-type check4_8 struct{}
+type check_4_8 struct{}
 
-func (c *check4_8) ID() string { return "4.8" }
+func (c *check_4_8) ID() string { return "4.8" }
 
-func (c *check4_8) Requirements() checker.CheckRequirements {
+func (c *check_4_8) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true, Superuser: true}
 }
 
-func (c *check4_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	if !env.IsSuperuser {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityInfo,
-			SkipReason: "Requires superuser privileges to access pg_authid.",
-		}, nil
-	}
-
+func (c *check_4_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		WITH RECURSIVE roltree AS (
 			SELECT u.rolname, u.oid, u.rolcanlogin, u.rolsuper, '{}'::name[] AS rolparents,
@@ -440,15 +432,15 @@ func (c *check4_8) Run(ctx context.Context, env *checker.Environment) (*checker.
 
 // --- Check 4.10 ---
 
-type check4_10 struct{}
+type check_4_10 struct{}
 
-func (c *check4_10) ID() string { return "4.10" }
+func (c *check_4_10) ID() string { return "4.10" }
 
-func (c *check4_10) Requirements() checker.CheckRequirements {
+func (c *check_4_10) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check4_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var nspacl *string
 	err := env.DB.QueryRow(ctx, "SELECT nspacl::text FROM pg_namespace WHERE nspname = 'public'").Scan(&nspacl)
 	if err != nil {

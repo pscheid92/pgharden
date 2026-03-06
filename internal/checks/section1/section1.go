@@ -12,32 +12,32 @@ import (
 )
 
 func init() {
-	checker.Register(&check11{})
-	checker.Register(&check12{})
-	checker.Register(&check13{})
-	checker.Register(&check15{})
-	checker.Register(&check16{})
-	checker.Register(&check17{})
-	checker.Register(&check18{})
-	checker.Register(&check19{})
-	checker.Register(&check111{})
-	checker.Register(&check141{})
-	checker.Register(&check142{})
-	checker.Register(&check143{})
-	checker.Register(&check144{})
-	checker.Register(&check145{})
+	checker.Register(&check_1_1{})
+	checker.Register(&check_1_2{})
+	checker.Register(&check_1_3{})
+	checker.Register(&check_1_5{})
+	checker.Register(&check_1_6{})
+	checker.Register(&check_1_7{})
+	checker.Register(&check_1_8{})
+	checker.Register(&check_1_9{})
+	checker.Register(&check_1_1_1{})
+	checker.Register(&check_1_4_1{})
+	checker.Register(&check_1_4_2{})
+	checker.Register(&check_1_4_3{})
+	checker.Register(&check_1_4_4{})
+	checker.Register(&check_1_4_5{})
 }
 
-// check11 — 1.1: Verify PostgreSQL packages are obtained from authorized repositories
-type check11 struct{}
+// check_1_1 — 1.1: Verify PostgreSQL packages are obtained from authorized repositories
+type check_1_1 struct{}
 
-func (c *check11) ID() string { return "1.1" }
+func (c *check_1_1) ID() string { return "1.1" }
 
-func (c *check11) Requirements() checker.CheckRequirements {
+func (c *check_1_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	return &checker.CheckResult{
 		Status:   checker.StatusManual,
 		Severity: checker.SeverityInfo,
@@ -47,16 +47,16 @@ func (c *check11) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	}, nil
 }
 
-// check12 — 1.2: Verify PostgreSQL systemd service is enabled
-type check12 struct{}
+// check_1_2 — 1.2: Verify PostgreSQL systemd service is enabled
+type check_1_2 struct{}
 
-func (c *check12) ID() string { return "1.2" }
+func (c *check_1_2) ID() string { return "1.2" }
 
-func (c *check12) Requirements() checker.CheckRequirements {
+func (c *check_1_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Commands: []string{"systemctl"}}
 }
 
-func (c *check12) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	out, err := exec.CommandContext(ctx, "systemctl", "is-enabled", "postgresql").CombinedOutput()
@@ -93,16 +93,16 @@ func (c *check12) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check13 — 1.3: Verify data cluster is initialized
-type check13 struct{}
+// check_1_3 — 1.3: Verify data cluster is initialized
+type check_1_3 struct{}
 
-func (c *check13) ID() string { return "1.3" }
+func (c *check_1_3) ID() string { return "1.3" }
 
-func (c *check13) Requirements() checker.CheckRequirements {
+func (c *check_1_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check13) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
@@ -123,16 +123,16 @@ func (c *check13) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check15 — 1.5: Verify PostgreSQL is at the latest available version
-type check15 struct{}
+// check_1_5 — 1.5: Verify PostgreSQL is at the latest available version
+type check_1_5 struct{}
 
-func (c *check15) ID() string { return "1.5" }
+func (c *check_1_5) ID() string { return "1.5" }
 
-func (c *check15) Requirements() checker.CheckRequirements {
+func (c *check_1_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check15) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	return &checker.CheckResult{
 		Status:   checker.StatusManual,
 		Severity: checker.SeverityInfo,
@@ -142,16 +142,16 @@ func (c *check15) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	}, nil
 }
 
-// check16 — 1.6: Verify PGPASSWORD is not set in shell profiles
-type check16 struct{}
+// check_1_6 — 1.6: Verify PGPASSWORD is not set in shell profiles
+type check_1_6 struct{}
 
-func (c *check16) ID() string { return "1.6" }
+func (c *check_1_6) ID() string { return "1.6" }
 
-func (c *check16) Requirements() checker.CheckRequirements {
+func (c *check_1_6) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check16) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	profileFiles := []string{
@@ -197,16 +197,16 @@ func (c *check16) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check17 — 1.7: Verify PGPASSWORD is not set in process environments
-type check17 struct{}
+// check_1_7 — 1.7: Verify PGPASSWORD is not set in process environments
+type check_1_7 struct{}
 
-func (c *check17) ID() string { return "1.7" }
+func (c *check_1_7) ID() string { return "1.7" }
 
-func (c *check17) Requirements() checker.CheckRequirements {
+func (c *check_1_7) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check17) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	if env.OS != "linux" {
@@ -254,16 +254,16 @@ func (c *check17) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check18 — 1.8: Audit installed extensions
-type check18 struct{}
+// check_1_8 — 1.8: Audit installed extensions
+type check_1_8 struct{}
 
-func (c *check18) ID() string { return "1.8" }
+func (c *check_1_8) ID() string { return "1.8" }
 
-func (c *check18) Requirements() checker.CheckRequirements {
+func (c *check_1_8) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check18) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT e.extname, e.extversion, n.nspname
 		FROM pg_extension e
@@ -300,16 +300,16 @@ func (c *check18) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check19 — 1.9: Audit custom tablespaces
-type check19 struct{}
+// check_1_9 — 1.9: Audit custom tablespaces
+type check_1_9 struct{}
 
-func (c *check19) ID() string { return "1.9" }
+func (c *check_1_9) ID() string { return "1.9" }
 
-func (c *check19) Requirements() checker.CheckRequirements {
+func (c *check_1_9) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check19) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT spcname, pg_tablespace_location(oid) AS location
 		FROM pg_tablespace
@@ -352,16 +352,16 @@ func (c *check19) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check111 — 1.1.1: Verify PGDG repository is configured
-type check111 struct{}
+// check_1_1_1 — 1.1.1: Verify PGDG repository is configured
+type check_1_1_1 struct{}
 
-func (c *check111) ID() string { return "1.1.1" }
+func (c *check_1_1_1) ID() string { return "1.1.1" }
 
-func (c *check111) Requirements() checker.CheckRequirements {
+func (c *check_1_1_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check111) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	// Try RPM-based check
@@ -410,16 +410,16 @@ func (c *check111) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check141 — 1.4.1: Verify PG_VERSION matches running version
-type check141 struct{}
+// check_1_4_1 — 1.4.1: Verify PG_VERSION matches running version
+type check_1_4_1 struct{}
 
-func (c *check141) ID() string { return "1.4.1" }
+func (c *check_1_4_1) ID() string { return "1.4.1" }
 
-func (c *check141) Requirements() checker.CheckRequirements {
+func (c *check_1_4_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check141) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
@@ -452,16 +452,16 @@ func (c *check141) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check142 — 1.4.2: Verify PGDATA/PG_VERSION consistency with server
-type check142 struct{}
+// check_1_4_2 — 1.4.2: Verify PGDATA/PG_VERSION consistency with server
+type check_1_4_2 struct{}
 
-func (c *check142) ID() string { return "1.4.2" }
+func (c *check_1_4_2) ID() string { return "1.4.2" }
 
-func (c *check142) Requirements() checker.CheckRequirements {
+func (c *check_1_4_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check142) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
@@ -513,16 +513,16 @@ func (c *check142) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check143 — 1.4.3: Verify data checksums are enabled
-type check143 struct{}
+// check_1_4_3 — 1.4.3: Verify data checksums are enabled
+type check_1_4_3 struct{}
 
-func (c *check143) ID() string { return "1.4.3" }
+func (c *check_1_4_3) ID() string { return "1.4.3" }
 
-func (c *check143) Requirements() checker.CheckRequirements {
+func (c *check_1_4_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check143) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var val string
 	if err := env.DB.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = 'data_checksums'").Scan(&val); err != nil {
 		return nil, err
@@ -545,16 +545,16 @@ func (c *check143) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check144 — 1.4.4: Verify WAL and temp files are on separate storage
-type check144 struct{}
+// check_1_4_4 — 1.4.4: Verify WAL and temp files are on separate storage
+type check_1_4_4 struct{}
 
-func (c *check144) ID() string { return "1.4.4" }
+func (c *check_1_4_4) ID() string { return "1.4.4" }
 
-func (c *check144) Requirements() checker.CheckRequirements {
+func (c *check_1_4_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check144) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	// Check if pg_wal is a symlink (separate storage)
@@ -592,16 +592,16 @@ func (c *check144) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check145 — 1.4.5: Audit storage type
-type check145 struct{}
+// check_1_4_5 — 1.4.5: Audit storage type
+type check_1_4_5 struct{}
 
-func (c *check145) ID() string { return "1.4.5" }
+func (c *check_1_4_5) ID() string { return "1.4.5" }
 
-func (c *check145) Requirements() checker.CheckRequirements {
+func (c *check_1_4_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check145) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_1_4_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	return &checker.CheckResult{
 		Status:   checker.StatusManual,
 		Severity: checker.SeverityInfo,

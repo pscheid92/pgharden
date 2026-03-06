@@ -15,29 +15,29 @@ import (
 )
 
 func init() {
-	checker.Register(&check21{})
-	checker.Register(&check22{})
-	checker.Register(&check23{})
-	checker.Register(&check24{})
-	checker.Register(&check25{})
-	checker.Register(&check26{})
-	checker.Register(&check27{})
-	checker.Register(&check28{})
+	checker.Register(&check_2_1{})
+	checker.Register(&check_2_2{})
+	checker.Register(&check_2_3{})
+	checker.Register(&check_2_4{})
+	checker.Register(&check_2_5{})
+	checker.Register(&check_2_6{})
+	checker.Register(&check_2_7{})
+	checker.Register(&check_2_8{})
 }
 
 // ---------------------------------------------------------------------------
 // Check 2.1 – Verify umask is set to 0077
 // ---------------------------------------------------------------------------
 
-type check21 struct{}
+type check_2_1 struct{}
 
-func (c *check21) ID() string { return "2.1" }
+func (c *check_2_1) ID() string { return "2.1" }
 
-func (c *check21) Requirements() checker.CheckRequirements {
+func (c *check_2_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Commands: []string{"sh"}}
 }
 
-func (c *check21) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	out, err := exec.CommandContext(ctx, "sh", "-c", "umask").CombinedOutput()
@@ -71,15 +71,15 @@ func (c *check21) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.2 – Verify extension directory permissions
 // ---------------------------------------------------------------------------
 
-type check22 struct{}
+type check_2_2 struct{}
 
-func (c *check22) ID() string { return "2.2" }
+func (c *check_2_2) ID() string { return "2.2" }
 
-func (c *check22) Requirements() checker.CheckRequirements {
+func (c *check_2_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check22) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	var dynPath string
@@ -143,15 +143,15 @@ func (c *check22) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.3 – Verify .psql_history is protected
 // ---------------------------------------------------------------------------
 
-type check23 struct{}
+type check_2_3 struct{}
 
-func (c *check23) ID() string { return "2.3" }
+func (c *check_2_3) ID() string { return "2.3" }
 
-func (c *check23) Requirements() checker.CheckRequirements {
+func (c *check_2_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check23) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	// Check common home directories for .psql_history
@@ -219,15 +219,15 @@ func (c *check23) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.4 – Verify .pg_service.conf has no passwords
 // ---------------------------------------------------------------------------
 
-type check24 struct{}
+type check_2_4 struct{}
 
-func (c *check24) ID() string { return "2.4" }
+func (c *check_2_4) ID() string { return "2.4" }
 
-func (c *check24) Requirements() checker.CheckRequirements {
+func (c *check_2_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check24) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
@@ -287,15 +287,15 @@ func checkServiceConf(path string, problems *[]string) {
 // Check 2.5 – Verify pg_hba.conf file permissions
 // ---------------------------------------------------------------------------
 
-type check25 struct{}
+type check_2_5 struct{}
 
-func (c *check25) ID() string { return "2.5" }
+func (c *check_2_5) ID() string { return "2.5" }
 
-func (c *check25) Requirements() checker.CheckRequirements {
+func (c *check_2_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check25) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	var hbaFile string
@@ -335,15 +335,15 @@ func (c *check25) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.6 – Verify Unix socket directory permissions
 // ---------------------------------------------------------------------------
 
-type check26 struct{}
+type check_2_6 struct{}
 
-func (c *check26) ID() string { return "2.6" }
+func (c *check_2_6) ID() string { return "2.6" }
 
-func (c *check26) Requirements() checker.CheckRequirements {
+func (c *check_2_6) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check26) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	var sockDirs string
@@ -390,15 +390,15 @@ func (c *check26) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.7 – Verify PGDATA directory permissions
 // ---------------------------------------------------------------------------
 
-type check27 struct{}
+type check_2_7 struct{}
 
-func (c *check27) ID() string { return "2.7" }
+func (c *check_2_7) ID() string { return "2.7" }
 
-func (c *check27) Requirements() checker.CheckRequirements {
+func (c *check_2_7) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check27) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	info, err := os.Stat(env.DataDir)
@@ -432,15 +432,15 @@ func (c *check27) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 2.8 – Verify PGDATA file ownership (manual check)
 // ---------------------------------------------------------------------------
 
-type check28 struct{}
+type check_2_8 struct{}
 
-func (c *check28) ID() string { return "2.8" }
+func (c *check_2_8) ID() string { return "2.8" }
 
-func (c *check28) Requirements() checker.CheckRequirements {
+func (c *check_2_8) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Filesystem: true}
 }
 
-func (c *check28) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_2_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	return &checker.CheckResult{
 		Status:   checker.StatusManual,
 		Severity: checker.SeverityInfo,

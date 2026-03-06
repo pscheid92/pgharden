@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // Runner orchestrates check execution with filtering and skip logic.
@@ -57,7 +58,7 @@ func (r *Runner) shouldSkip(c Check) bool {
 	// Section filter
 	if r.IncludeSection != "" {
 		section := id
-		if dot := indexOf(id, '.'); dot >= 0 {
+		if dot := strings.IndexByte(id, '.'); dot >= 0 {
 			section = id[:dot]
 		}
 		if section != r.IncludeSection {
@@ -66,15 +67,6 @@ func (r *Runner) shouldSkip(c Check) bool {
 	}
 
 	return false
-}
-
-func indexOf(s string, c byte) int {
-	for i := range len(s) {
-		if s[i] == c {
-			return i
-		}
-	}
-	return -1
 }
 
 func (r *Runner) runOne(ctx context.Context, c Check) RunResult {

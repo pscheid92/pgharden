@@ -10,28 +10,28 @@ import (
 )
 
 func init() {
-	checker.Register(&check6_2{})
-	checker.Register(&check6_3{})
-	checker.Register(&check6_4{})
-	checker.Register(&check6_5{})
-	checker.Register(&check6_6{})
-	checker.Register(&check67{})
-	checker.Register(&check6_8{})
-	checker.Register(&check6_9{})
-	checker.Register(&check6_10{})
-	checker.Register(&check6_11{})
+	checker.Register(&check_6_2{})
+	checker.Register(&check_6_3{})
+	checker.Register(&check_6_4{})
+	checker.Register(&check_6_5{})
+	checker.Register(&check_6_6{})
+	checker.Register(&check_6_7{})
+	checker.Register(&check_6_8{})
+	checker.Register(&check_6_9{})
+	checker.Register(&check_6_10{})
+	checker.Register(&check_6_11{})
 }
 
-// check6_2 - Backend runtime parameters
-type check6_2 struct{}
+// check_6_2 - Backend runtime parameters
+type check_6_2 struct{}
 
-func (c *check6_2) ID() string { return "6.2" }
+func (c *check_6_2) ID() string { return "6.2" }
 
-func (c *check6_2) Requirements() checker.CheckRequirements {
+func (c *check_6_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, setting FROM pg_settings WHERE context = 'backend'")
 	if err != nil {
@@ -95,16 +95,16 @@ func (c *check6_2) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_3 - Postmaster runtime parameters
-type check6_3 struct{}
+// check_6_3 - Postmaster runtime parameters
+type check_6_3 struct{}
 
-func (c *check6_3) ID() string { return "6.3" }
+func (c *check_6_3) ID() string { return "6.3" }
 
-func (c *check6_3) Requirements() checker.CheckRequirements {
+func (c *check_6_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, setting FROM pg_settings WHERE context = 'postmaster' ORDER BY name")
 	if err != nil {
@@ -140,16 +140,16 @@ func (c *check6_3) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_4 - SIGHUP runtime parameters
-type check6_4 struct{}
+// check_6_4 - SIGHUP runtime parameters
+type check_6_4 struct{}
 
-func (c *check6_4) ID() string { return "6.4" }
+func (c *check_6_4) ID() string { return "6.4" }
 
-func (c *check6_4) Requirements() checker.CheckRequirements {
+func (c *check_6_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, setting FROM pg_settings WHERE context = 'sighup' ORDER BY name")
 	if err != nil {
@@ -185,16 +185,16 @@ func (c *check6_4) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_5 - Superuser runtime parameters
-type check6_5 struct{}
+// check_6_5 - Superuser runtime parameters
+type check_6_5 struct{}
 
-func (c *check6_5) ID() string { return "6.5" }
+func (c *check_6_5) ID() string { return "6.5" }
 
-func (c *check6_5) Requirements() checker.CheckRequirements {
+func (c *check_6_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, setting FROM pg_settings WHERE context = 'superuser' ORDER BY name")
 	if err != nil {
@@ -230,16 +230,16 @@ func (c *check6_5) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_6 - User runtime parameters
-type check6_6 struct{}
+// check_6_6 - User runtime parameters
+type check_6_6 struct{}
 
-func (c *check6_6) ID() string { return "6.6" }
+func (c *check_6_6) ID() string { return "6.6" }
 
-func (c *check6_6) Requirements() checker.CheckRequirements {
+func (c *check_6_6) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, setting FROM pg_settings WHERE context = 'user' ORDER BY name")
 	if err != nil {
@@ -275,16 +275,16 @@ func (c *check6_6) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check67 - FIPS mode
-type check67 struct{}
+// check_6_7 - FIPS mode
+type check_6_7 struct{}
 
-func (c *check67) ID() string { return "6.7" }
+func (c *check_6_7) ID() string { return "6.7" }
 
-func (c *check67) Requirements() checker.CheckRequirements {
+func (c *check_6_7) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Commands: []string{"fips-mode-setup"}}
 }
 
-func (c *check67) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	out, err := exec.CommandContext(ctx, "fips-mode-setup", "--check").CombinedOutput()
@@ -315,16 +315,16 @@ func (c *check67) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check6_8 - SSL settings
-type check6_8 struct{}
+// check_6_8 - SSL settings
+type check_6_8 struct{}
 
-func (c *check6_8) ID() string { return "6.8" }
+func (c *check_6_8) ID() string { return "6.8" }
 
-func (c *check6_8) Requirements() checker.CheckRequirements {
+func (c *check_6_8) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var sslOn, sslMinVersion, sslPassCmd string
 
 	err := env.DB.QueryRow(ctx, "SHOW ssl").Scan(&sslOn)
@@ -387,16 +387,16 @@ func (c *check6_8) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_9 - Cryptographic extensions
-type check6_9 struct{}
+// check_6_9 - Cryptographic extensions
+type check_6_9 struct{}
 
-func (c *check6_9) ID() string { return "6.9" }
+func (c *check_6_9) ID() string { return "6.9" }
 
-func (c *check6_9) Requirements() checker.CheckRequirements {
+func (c *check_6_9) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT name, installed_version, default_version FROM pg_available_extensions WHERE name IN ('pgcrypto', 'pgsodium')")
 	if err != nil {
@@ -448,12 +448,12 @@ func (c *check6_9) Run(ctx context.Context, env *checker.Environment) (*checker.
 	return result, nil
 }
 
-// check6_10 - SSL ciphers
-type check6_10 struct{}
+// check_6_10 - SSL ciphers
+type check_6_10 struct{}
 
-func (c *check6_10) ID() string { return "6.10" }
+func (c *check_6_10) ID() string { return "6.10" }
 
-func (c *check6_10) Requirements() checker.CheckRequirements {
+func (c *check_6_10) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
@@ -470,7 +470,7 @@ var allowedCiphers = map[string]bool{
 	"DHE-RSA-AES128-GCM-SHA256":     true,
 }
 
-func (c *check6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var ciphers string
 	err := env.DB.QueryRow(ctx, "SHOW ssl_ciphers").Scan(&ciphers)
 	if err != nil {
@@ -512,16 +512,16 @@ func (c *check6_10) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check6_11 - Data anonymization
-type check6_11 struct{}
+// check_6_11 - Data anonymization
+type check_6_11 struct{}
 
-func (c *check6_11) ID() string { return "6.11" }
+func (c *check_6_11) ID() string { return "6.11" }
 
-func (c *check6_11) Requirements() checker.CheckRequirements {
+func (c *check_6_11) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check6_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var libs string
 	err := env.DB.QueryRow(ctx, "SHOW session_preload_libraries").Scan(&libs)
 	if err != nil {

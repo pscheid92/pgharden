@@ -62,9 +62,17 @@ func netmaskToPrefix(ip, mask string) (string, error) {
 		return "", fmt.Errorf("parsing netmask %q: %w", mask, err)
 	}
 
-	// Count bits in mask
-	maskBytes := maskAddr.As16()
-	maskInt := new(big.Int).SetBytes(maskBytes[:])
+	// Use the native-size byte representation to avoid IPv4-in-IPv6 mapping issues.
+	var maskBytes []byte
+	if maskAddr.Is4() {
+		b := maskAddr.As4()
+		maskBytes = b[:]
+	} else {
+		b := maskAddr.As16()
+		maskBytes = b[:]
+	}
+
+	maskInt := new(big.Int).SetBytes(maskBytes)
 	bits := 0
 	for i := maskInt.BitLen() - 1; i >= 0; i-- {
 		if maskInt.Bit(i) == 1 {

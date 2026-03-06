@@ -9,22 +9,25 @@ import (
 )
 
 func init() {
-	checker.Register(&check71{})
-	checker.Register(&check72{})
-	checker.Register(&check74{})
-	checker.Register(&check75{})
+	checker.Register(&check_7_1{})
+	checker.Register(&checker.SettingCheck{
+		CheckID: "7.2", Setting: "log_replication_commands", Expected: "on",
+		Sev: checker.SeverityWarning, Reqs: checker.CheckRequirements{SQLOnly: true},
+	})
+	checker.Register(&check_7_4{})
+	checker.Register(&check_7_5{})
 }
 
-// check71 - Dedicated replication user
-type check71 struct{}
+// check_7_1 - Dedicated replication user
+type check_7_1 struct{}
 
-func (c *check71) ID() string { return "7.1" }
+func (c *check_7_1) ID() string { return "7.1" }
 
-func (c *check71) Requirements() checker.CheckRequirements {
+func (c *check_7_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check71) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolreplication = true")
 	if err != nil {
 		return nil, err
@@ -89,42 +92,16 @@ func (c *check71) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check72 - Log replication commands
-type check72 struct{}
+// check_7_4 - Archive mode
+type check_7_4 struct{}
 
-func (c *check72) ID() string { return "7.2" }
+func (c *check_7_4) ID() string { return "7.4" }
 
-func (c *check72) Requirements() checker.CheckRequirements {
+func (c *check_7_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check72) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var val string
-	if err := env.DB.QueryRow(ctx, "SHOW log_replication_commands").Scan(&val); err != nil {
-		return nil, err
-	}
-
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
-	if val != "on" {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{Level: "FAILURE", Content: "log_replication_commands is '" + val + "', expected 'on'"})
-	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{Level: "SUCCESS", Content: "log_replication_commands is enabled"})
-	}
-	return result, nil
-}
-
-// check74 - Archive mode
-type check74 struct{}
-
-func (c *check74) ID() string { return "7.4" }
-
-func (c *check74) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
-
-func (c *check74) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_7_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, "SELECT name, setting FROM pg_settings WHERE name ~ '^archive'")
 	if err != nil {
 		return nil, err
@@ -164,16 +141,16 @@ func (c *check74) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check75 - Replication SSL
-type check75 struct{}
+// check_7_5 - Replication SSL
+type check_7_5 struct{}
 
-func (c *check75) ID() string { return "7.5" }
+func (c *check_7_5) ID() string { return "7.5" }
 
-func (c *check75) Requirements() checker.CheckRequirements {
+func (c *check_7_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check75) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var val string
 	if err := env.DB.QueryRow(ctx, "SHOW primary_conninfo").Scan(&val); err != nil {
 		return nil, err

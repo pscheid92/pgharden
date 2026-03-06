@@ -33,12 +33,19 @@ var version = "dev"
 func main() {
 	cfg := config.DefaultConfig()
 
+	var exitCode int
+	var noColor bool
+	var formatExplicit bool
+
 	rootCmd := &cobra.Command{
 		Use:   "pgharden",
 		Short: "PostgreSQL Database Security Assessment Tool",
 		Long:  "Automated security assessment of PostgreSQL databases following CIS Benchmark recommendations.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return run(cmd.Context(), cfg)
+			formatExplicit = cmd.Flags().Changed("format")
+			var err error
+			exitCode, err = run(cmd.Context(), cfg, formatExplicit, noColor)
+			return err
 		},
 		SilenceUsage: true,
 	}
@@ -49,7 +56,8 @@ func main() {
 	flags.StringVarP(&cfg.User, "user", "U", cfg.User, "PostgreSQL user")
 	flags.StringVarP(&cfg.Database, "database", "d", cfg.Database, "Database to connect to")
 	flags.StringVar(&cfg.DSN, "dsn", "", "Full connection string (overrides host/port/user/database)")
-	flags.StringVarP(&cfg.Format, "format", "f", cfg.Format, "Output format: json, html")
+	flags.StringVarP(&cfg.Format, "format", "f", cfg.Format, "Output format: text, json, html")
+	flags.BoolVar(&noColor, "no-color", false, "Disable colored output")
 	flags.StringVarP(&cfg.Output, "output", "o", cfg.Output, "Output file (default: stdout)")
 	flags.StringVarP(&cfg.Lang, "lang", "l", cfg.Lang, "Language: en_US, fr_FR, zh_CN")
 	flags.StringVar(&cfg.Title, "title", "", "Report title")
@@ -85,14 +93,17 @@ func main() {
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(3)
 	}
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
 }
 
-func run(ctx context.Context, cfg *config.Config) error {
+func run(ctx context.Context, cfg *config.Config, formatExplicit bool, noColor bool) (int, error) {
 	// Connect
 	fmt.Fprintf(os.Stderr, "Connecting to %s:%d as %s...\n", cfg.Host, cfg.Port, cfg.User)
 	conn, err := connection.Connect(ctx, cfg.ConnString())
 	if err != nil {
-		return fmt.Errorf("connection failed: %w", err)
+		return 0, fmt.Errorf("connection failed: %w", err)
 	}
 	defer func() { _ = conn.Close(ctx) }()
 
@@ -102,7 +113,7 @@ func run(ctx context.Context, cfg *config.Config) error {
 	fmt.Fprintln(os.Stderr, "Detecting environment...")
 	env, err := environment.Detect(ctx, conn, db)
 	if err != nil {
-		return fmt.Errorf("environment detection failed: %w", err)
+		return 0, fmt.Errorf("environment detection failed: %w", err)
 	}
 	env.AllowDatabases = cfg.AllowDatabases
 	env.ExcludeDatabases = cfg.ExcludeDatabases
@@ -131,12 +142,24 @@ func run(ctx context.Context, cfg *config.Config) error {
 	}
 	rpt := report.Build(results, env, meta, cfg.Lang)
 
+	// Smart default format: text for TTY stdout, json for file output
+	if !formatExplicit {
+		if cfg.Output != "" {
+			cfg.Format = "json"
+		} else if isTerminal(os.Stdout) {
+			cfg.Format = "text"
+		}
+	}
+
+	// Color detection
+	useColor := cfg.Format == "text" && !noColor && os.Getenv("NO_COLOR") == "" && cfg.Output == "" && isTerminal(os.Stdout)
+
 	// Output
 	var out *os.File
 	if cfg.Output != "" {
 		out, err = os.Create(cfg.Output)
 		if err != nil {
-			return fmt.Errorf("creating output file: %w", err)
+			return 0, fmt.Errorf("creating output file: %w", err)
 		}
 		defer func() { _ = out.Close() }()
 	} else {
@@ -144,25 +167,37 @@ func run(ctx context.Context, cfg *config.Config) error {
 	}
 
 	switch cfg.Format {
+	case "text":
+		if err := report.WriteText(out, rpt, useColor); err != nil {
+			return 0, fmt.Errorf("writing text report: %w", err)
+		}
 	case "json":
 		if err := report.WriteJSON(out, rpt); err != nil {
-			return fmt.Errorf("writing JSON report: %w", err)
+			return 0, fmt.Errorf("writing JSON report: %w", err)
 		}
 	case "html":
 		if err := report.WriteHTML(out, rpt); err != nil {
-			return fmt.Errorf("writing HTML report: %w", err)
+			return 0, fmt.Errorf("writing HTML report: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported format: %s", cfg.Format)
+		return 0, fmt.Errorf("unsupported format: %s", cfg.Format)
 	}
 
 	// Exit code based on results
 	if rpt.Summary.BySeverity["CRITICAL"] > 0 {
-		os.Exit(1)
+		return 1, nil
 	}
 	if rpt.Summary.Failed > 0 {
-		os.Exit(2)
+		return 2, nil
 	}
 
-	return nil
+	return 0, nil
+}
+
+func isTerminal(f *os.File) bool {
+	stat, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return stat.Mode()&os.ModeCharDevice != 0
 }

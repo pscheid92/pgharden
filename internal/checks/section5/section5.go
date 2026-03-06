@@ -13,18 +13,18 @@ import (
 )
 
 func init() {
-	checker.Register(&check51{})
-	checker.Register(&check5_2{})
-	checker.Register(&check53{})
-	checker.Register(&check54{})
-	checker.Register(&check5_5{})
-	checker.Register(&check5_6{})
-	checker.Register(&check5_7{})
-	checker.Register(&check58{})
-	checker.Register(&check59{})
-	checker.Register(&check510{})
-	checker.Register(&check511{})
-	checker.Register(&check5_12{})
+	checker.Register(&check_5_1{})
+	checker.Register(&check_5_2{})
+	checker.Register(&check_5_3{})
+	checker.Register(&check_5_4{})
+	checker.Register(&check_5_5{})
+	checker.Register(&check_5_6{})
+	checker.Register(&check_5_7{})
+	checker.Register(&check_5_8{})
+	checker.Register(&check_5_9{})
+	checker.Register(&check_5_10{})
+	checker.Register(&check_5_11{})
+	checker.Register(&check_5_12{})
 }
 
 // ensureHBA loads the HBA entries into env if not already loaded.
@@ -58,15 +58,15 @@ func ensureHBA(ctx context.Context, env *checker.Environment) error {
 // Check 5.1
 // ---------------------------------------------------------------------------
 
-type check51 struct{}
+type check_5_1 struct{}
 
-func (c *check51) ID() string { return "5.1" }
+func (c *check_5_1) ID() string { return "5.1" }
 
-func (c *check51) Requirements() checker.CheckRequirements {
+func (c *check_5_1) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Commands: []string{"ps"}}
 }
 
-func (c *check51) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	out, err := exec.CommandContext(ctx, "ps", "-ef").CombinedOutput()
@@ -108,15 +108,15 @@ func (c *check51) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 5.2
 // ---------------------------------------------------------------------------
 
-type check5_2 struct{}
+type check_5_2 struct{}
 
-func (c *check5_2) ID() string { return "5.2" }
+func (c *check_5_2) ID() string { return "5.2" }
 
-func (c *check5_2) Requirements() checker.CheckRequirements {
+func (c *check_5_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check5_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var listenAddr string
 	err := env.DB.QueryRow(ctx, "SHOW listen_addresses").Scan(&listenAddr)
 	if err != nil {
@@ -146,15 +146,15 @@ func (c *check5_2) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.3
 // ---------------------------------------------------------------------------
 
-type check53 struct{}
+type check_5_3 struct{}
 
-func (c *check53) ID() string { return "5.3" }
+func (c *check_5_3) ID() string { return "5.3" }
 
-func (c *check53) Requirements() checker.CheckRequirements {
+func (c *check_5_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check53) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -209,15 +209,15 @@ func (c *check53) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 5.4
 // ---------------------------------------------------------------------------
 
-type check54 struct{}
+type check_5_4 struct{}
 
-func (c *check54) ID() string { return "5.4" }
+func (c *check_5_4) ID() string { return "5.4" }
 
-func (c *check54) Requirements() checker.CheckRequirements {
+func (c *check_5_4) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check54) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -272,15 +272,15 @@ func (c *check54) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 5.5
 // ---------------------------------------------------------------------------
 
-type check5_5 struct{}
+type check_5_5 struct{}
 
-func (c *check5_5) ID() string { return "5.5" }
+func (c *check_5_5) ID() string { return "5.5" }
 
-func (c *check5_5) Requirements() checker.CheckRequirements {
+func (c *check_5_5) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
 		"SELECT rolname, rolconnlimit FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1")
 	if err != nil {
@@ -327,15 +327,15 @@ func (c *check5_5) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.6
 // ---------------------------------------------------------------------------
 
-type check5_6 struct{}
+type check_5_6 struct{}
 
-func (c *check5_6) ID() string { return "5.6" }
+func (c *check_5_6) ID() string { return "5.6" }
 
-func (c *check5_6) Requirements() checker.CheckRequirements {
+func (c *check_5_6) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check5_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var libs string
 	err := env.DB.QueryRow(ctx, "SHOW shared_preload_libraries").Scan(&libs)
 	if err != nil {
@@ -373,15 +373,15 @@ func (c *check5_6) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.7
 // ---------------------------------------------------------------------------
 
-type check5_7 struct{}
+type check_5_7 struct{}
 
-func (c *check5_7) ID() string { return "5.7" }
+func (c *check_5_7) ID() string { return "5.7" }
 
-func (c *check5_7) Requirements() checker.CheckRequirements {
+func (c *check_5_7) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check5_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var authTimeout string
 	err := env.DB.QueryRow(ctx, "SHOW authentication_timeout").Scan(&authTimeout)
 	if err != nil {
@@ -444,15 +444,15 @@ func (c *check5_7) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.8
 // ---------------------------------------------------------------------------
 
-type check58 struct{}
+type check_5_8 struct{}
 
-func (c *check58) ID() string { return "5.8" }
+func (c *check_5_8) ID() string { return "5.8" }
 
-func (c *check58) Requirements() checker.CheckRequirements {
+func (c *check_5_8) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check58) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -504,15 +504,15 @@ func (c *check58) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 5.9
 // ---------------------------------------------------------------------------
 
-type check59 struct{}
+type check_5_9 struct{}
 
-func (c *check59) ID() string { return "5.9" }
+func (c *check_5_9) ID() string { return "5.9" }
 
-func (c *check59) Requirements() checker.CheckRequirements {
+func (c *check_5_9) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check59) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -588,15 +588,15 @@ func (c *check59) Run(ctx context.Context, env *checker.Environment) (*checker.C
 // Check 5.10
 // ---------------------------------------------------------------------------
 
-type check510 struct{}
+type check_5_10 struct{}
 
-func (c *check510) ID() string { return "5.10" }
+func (c *check_5_10) ID() string { return "5.10" }
 
-func (c *check510) Requirements() checker.CheckRequirements {
+func (c *check_5_10) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{}
 }
 
-func (c *check510) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -646,15 +646,15 @@ func (c *check510) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.11
 // ---------------------------------------------------------------------------
 
-type check511 struct{}
+type check_5_11 struct{}
 
-func (c *check511) ID() string { return "5.11" }
+func (c *check_5_11) ID() string { return "5.11" }
 
-func (c *check511) Requirements() checker.CheckRequirements {
+func (c *check_5_11) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Superuser: true}
 }
 
-func (c *check511) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
 		return &checker.CheckResult{
 			Status:     checker.StatusSkipped,
@@ -733,15 +733,15 @@ func (c *check511) Run(ctx context.Context, env *checker.Environment) (*checker.
 // Check 5.12
 // ---------------------------------------------------------------------------
 
-type check5_12 struct{}
+type check_5_12 struct{}
 
-func (c *check5_12) ID() string { return "5.12" }
+func (c *check_5_12) ID() string { return "5.12" }
 
-func (c *check5_12) Requirements() checker.CheckRequirements {
+func (c *check_5_12) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check5_12) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	var passEnc string
 	err := env.DB.QueryRow(ctx, "SHOW password_encryption").Scan(&passEnc)
 	if err != nil {

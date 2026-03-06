@@ -2,6 +2,7 @@ package environment
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -11,6 +12,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/connection"
+)
+
+var (
+	pgVersionRe = regexp.MustCompile(`PostgreSQL (\d+)`)
+	containerRe = regexp.MustCompile(`docker|kubepods|containerd`)
 )
 
 // Detect probes the runtime environment and builds a checker.Environment.
@@ -58,7 +64,9 @@ func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*c
 
 	// Get database list
 	rows, err := conn.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
-	if err == nil {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to list databases: %v\n", err)
+	} else {
 		defer rows.Close()
 		for rows.Next() {
 			var dbname string
@@ -70,7 +78,9 @@ func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*c
 
 	// Get superuser list
 	srows, err := conn.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
-	if err == nil {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to list superusers: %v\n", err)
+	} else {
 		defer srows.Close()
 		for srows.Next() {
 			var rolname string
@@ -84,8 +94,7 @@ func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*c
 }
 
 func parseMajorVersion(versionStr string) int {
-	re := regexp.MustCompile(`PostgreSQL (\d+)`)
-	matches := re.FindStringSubmatch(versionStr)
+	matches := pgVersionRe.FindStringSubmatch(versionStr)
 	if len(matches) >= 2 {
 		v, _ := strconv.Atoi(matches[1])
 		return v
@@ -103,7 +112,7 @@ func detectContainer() bool {
 	data, err := os.ReadFile("/proc/1/cgroup")
 	if err == nil {
 		content := string(data)
-		if regexp.MustCompile(`docker|kubepods|containerd`).MatchString(content) {
+		if containerRe.MatchString(content) {
 			return true
 		}
 	}

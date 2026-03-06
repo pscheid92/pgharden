@@ -10,20 +10,20 @@ import (
 )
 
 func init() {
-	checker.Register(&check82{})
-	checker.Register(&check8_3{})
+	checker.Register(&check_8_2{})
+	checker.Register(&check_8_3{})
 }
 
-// check82 - pgBackRest backup
-type check82 struct{}
+// check_8_2 - pgBackRest backup
+type check_8_2 struct{}
 
-func (c *check82) ID() string { return "8.2" }
+func (c *check_8_2) ID() string { return "8.2" }
 
-func (c *check82) Requirements() checker.CheckRequirements {
+func (c *check_8_2) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{Commands: []string{"pgbackrest"}}
 }
 
-func (c *check82) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_8_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	out, err := exec.CommandContext(ctx, "pgbackrest", "info").CombinedOutput()
@@ -54,16 +54,16 @@ func (c *check82) Run(ctx context.Context, env *checker.Environment) (*checker.C
 	return result, nil
 }
 
-// check8_3 - Special file settings
-type check8_3 struct{}
+// check_8_3 - Special file settings
+type check_8_3 struct{}
 
-func (c *check8_3) ID() string { return "8.3" }
+func (c *check_8_3) ID() string { return "8.3" }
 
-func (c *check8_3) Requirements() checker.CheckRequirements {
+func (c *check_8_3) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check8_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *check_8_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx, `
 		SELECT name, setting FROM pg_settings
 		WHERE name IN ('ssl_cert_file', 'ssl_key_file', 'ssl_ca_file', 'ssl_crl_file',
