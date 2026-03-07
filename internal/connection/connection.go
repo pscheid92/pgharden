@@ -7,7 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Connect establishes a single persistent connection to PostgreSQL.
 func Connect(ctx context.Context, connStr string) (*pgx.Conn, error) {
 	cfg, err := pgx.ParseConfig(connStr)
 	if err != nil {

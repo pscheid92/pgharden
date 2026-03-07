@@ -16,8 +16,13 @@ type SettingCheck struct {
 	Reqs       CheckRequirements // Requirements for this check
 }
 
-func (c *SettingCheck) ID() string                      { return c.CheckID }
-func (c *SettingCheck) Requirements() CheckRequirements { return c.Reqs }
+func (c *SettingCheck) ID() string {
+	return c.CheckID
+}
+
+func (c *SettingCheck) Requirements() CheckRequirements {
+	return c.Reqs
+}
 
 func (c *SettingCheck) Run(ctx context.Context, env *Environment) (*CheckResult, error) {
 	val, err := ShowSetting(ctx, env.DB, c.Setting)

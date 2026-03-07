@@ -194,14 +194,12 @@ func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error)
 	return val, nil
 }
 
-// SortChecks sorts checks by their dotted-number IDs.
 func SortChecks(checks []Check) {
 	sort.Slice(checks, func(i, j int) bool {
 		return CompareCheckIDs(checks[i].ID(), checks[j].ID()) < 0
 	})
 }
 
-// CompareCheckIDs compares two dotted-number check IDs (e.g., "1.4.3" vs "1.10").
 func CompareCheckIDs(a, b string) int {
 	partsA := strings.Split(a, ".")
 	partsB := strings.Split(b, ".")

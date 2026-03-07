@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 
@@ -51,13 +51,13 @@ func run(ctx context.Context, cfg *config.Config, opts *RunOptions) (int, error)
 }
 
 func connect(ctx context.Context, cfg *config.Config) (*pgx.Conn, *checker.Environment, error) {
-	fmt.Fprintf(os.Stderr, "Connecting to %s:%d as %s...\n", cfg.Host, cfg.Port, cfg.User)
+	slog.Info("connecting", "host", cfg.Host, "port", cfg.Port, "user", cfg.User)
 	conn, err := connection.Connect(ctx, cfg.ConnString())
 	if err != nil {
 		return nil, nil, fmt.Errorf("connection failed: %w", err)
 	}
 
-	fmt.Fprintln(os.Stderr, "Detecting environment...")
+	slog.Info("detecting environment")
 	env, err := environment.Detect(ctx, conn)
 	if err != nil {
 		_ = conn.Close(ctx)
@@ -66,9 +66,13 @@ func connect(ctx context.Context, cfg *config.Config) (*pgx.Conn, *checker.Envir
 	env.AllowDatabases = cfg.AllowDatabases
 	env.ExcludeDatabases = cfg.ExcludeDatabases
 
-	fmt.Fprintf(os.Stderr, "PostgreSQL %d (%s)\n", env.PGVersion, env.PGVersionFull)
-	fmt.Fprintf(os.Stderr, "Superuser: %v | Filesystem: %v | Container: %v\n",
-		env.IsSuperuser, env.HasFilesystem, env.IsContainer)
+	slog.Info("connected",
+		"pg_version", env.PGVersion,
+		"pg_version_full", env.PGVersionFull,
+		"superuser", env.IsSuperuser,
+		"filesystem", env.HasFilesystem,
+		"container", env.IsContainer,
+	)
 
 	return conn, env, nil
 }
@@ -83,7 +87,7 @@ func runChecks(ctx context.Context, cfg *config.Config, env *checker.Environment
 		IncludeSection: cfg.IncludeSection,
 	}
 
-	fmt.Fprintf(os.Stderr, "Running %d checks...\n", len(checks))
+	slog.Info("running checks", "count", len(checks))
 	results := runner.RunAll(ctx)
 
 	meta := report.Metadata{

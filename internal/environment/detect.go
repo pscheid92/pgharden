@@ -2,7 +2,7 @@ package environment
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
@@ -19,13 +19,8 @@ var (
 	containerRe = regexp.MustCompile(`docker|kubepods|containerd`)
 )
 
-// Detect probes the runtime environment and builds a checker.Environment.
 func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
-	env := &checker.Environment{
-		DB:       conn,
-		Commands: make(map[string]bool),
-		OS:       runtime.GOOS,
-	}
+	env := &checker.Environment{DB: conn, Commands: make(map[string]bool), OS: runtime.GOOS}
 
 	// Detect PG version
 	var versionStr string
@@ -36,13 +31,13 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	env.PGVersion = parseMajorVersion(versionStr)
 
 	// Detect privileges
-	privs, err := connection.DetectPrivileges(ctx, conn)
+	privileges, err := connection.DetectPrivileges(ctx, conn)
 	if err != nil {
 		return nil, err
 	}
-	env.IsSuperuser = privs.IsSuperuser
-	env.IsRDSSuperuser = privs.IsRDSSuperuser
-	env.IsPGMonitor = privs.IsPGMonitor
+	env.IsSuperuser = privileges.IsSuperuser
+	env.IsRDSSuperuser = privileges.IsRDSSuperuser
+	env.IsPGMonitor = privileges.IsPGMonitor
 
 	// Detect data directory
 	var dataDir string
@@ -66,22 +61,22 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	// Get database list
 	dbRows, err := conn.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to list databases: %v\n", err)
+		slog.Warn("failed to list databases", "error", err)
 	} else {
 		env.Databases, err = pgx.CollectRows(dbRows, pgx.RowTo[string])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to collect databases: %v\n", err)
+			slog.Warn("failed to collect databases", "error", err)
 		}
 	}
 
 	// Get superuser list
 	suRows, err := conn.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to list superusers: %v\n", err)
+		slog.Warn("failed to list superusers", "error", err)
 	} else {
 		env.Superusers, err = pgx.CollectRows(suRows, pgx.RowTo[string])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to collect superusers: %v\n", err)
+			slog.Warn("failed to collect superusers", "error", err)
 		}
 	}
 
