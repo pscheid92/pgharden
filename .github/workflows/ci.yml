@@ -29,12 +29,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
-      - run: go test -short -race -coverprofile=coverage.out ./...
+      - run: go test -short -race -coverprofile=coverage-unit.out ./...
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
-          path: coverage.out
+          name: coverage-unit
+          path: coverage-unit.out
 
   test-integration:
     runs-on: ubuntu-latest
@@ -43,7 +43,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
-      - run: go test -race -run TestIntegration -timeout 120s ./...
+      - run: go test -race -coverpkg=./... -coverprofile=coverage-integration.out -run TestIntegration -timeout 120s ./...
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration.out
 
   build:
     runs-on: ubuntu-latest
