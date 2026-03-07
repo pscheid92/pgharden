@@ -207,6 +207,41 @@ func TestCheck_4_10_PublicSchemaHasCreate(t *testing.T) {
 	}
 }
 
+func TestCheck_4_10_UsageOnlyNoCreate(t *testing.T) {
+	mock, env := newMockEnv(t)
+	// PUBLIC has only U (USAGE), no C (CREATE)
+	acl := "{=U/postgres}"
+	mock.ExpectQuery("SELECT nspacl").
+		WillReturnRows(pgxmock.NewRows([]string{"nspacl"}).AddRow(&acl))
+
+	c := &check_4_10{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for =U/postgres (USAGE only), got %s", result.Status)
+	}
+}
+
+func TestCheck_4_10_MultipleACLEntries(t *testing.T) {
+	mock, env := newMockEnv(t)
+	// PUBLIC has U only, but a specific role has UC
+	acl := "{=U/postgres,appuser=UC/postgres}"
+	mock.ExpectQuery("SELECT nspacl").
+		WillReturnRows(pgxmock.NewRows([]string{"nspacl"}).AddRow(&acl))
+
+	c := &check_4_10{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// appuser has CREATE but they're named, not PUBLIC — should pass
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS (only named role has CREATE), got %s", result.Status)
+	}
+}
+
 func TestCheck_4_10_PublicSchemaNullACL(t *testing.T) {
 	mock, env := newMockEnv(t)
 	mock.ExpectQuery("SELECT nspacl").

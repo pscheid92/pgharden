@@ -530,6 +530,162 @@ func TestParsePGInterval(t *testing.T) {
 	}
 }
 
+// --- 5.3/5.4: mixed secure and insecure entries ---
+
+func TestCheck_5_3_MixedAuth(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "local", Database: "all", User: "all", Method: "peer"},
+		{LineNumber: 2, Type: "local", Database: "all", User: "admin", Method: "trust"},
+	}
+
+	c := &check_5_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for mixed entries, got %s", result.Status)
+	}
+	// trust is forbidden → should be CRITICAL even though peer is secure
+	if result.Severity != checker.SeverityCritical {
+		t.Errorf("expected CRITICAL (worst wins), got %s", result.Severity)
+	}
+}
+
+func TestCheck_5_4_MixedHostAuth(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "hostssl", Database: "app", User: "app", Address: "10.0.0.0/8", Method: "scram-sha-256"},
+		{LineNumber: 2, Type: "host", Database: "all", User: "all", Address: "0.0.0.0/0", Method: "md5"},
+	}
+
+	c := &check_5_4{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for md5 host auth, got %s", result.Status)
+	}
+	if result.Severity != checker.SeverityWarning {
+		t.Errorf("expected WARNING for md5, got %s", result.Severity)
+	}
+}
+
+func TestCheck_5_3_IgnoresHostEntries(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: "0.0.0.0/0", Method: "trust"},
+		{LineNumber: 2, Type: "local", Database: "all", User: "all", Method: "peer"},
+	}
+
+	c := &check_5_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// check_5_3 only looks at local entries, so the trust host entry is ignored
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS (host entries ignored by 5.3), got %s", result.Status)
+	}
+}
+
+// --- 5.8: localhost formats ---
+
+func TestCheck_5_8_LocalhostFormats(t *testing.T) {
+	localhostAddrs := []string{"127.0.0.1/32", "::1/128", "localhost", "127.0.0.1", "::1"}
+	for _, addr := range localhostAddrs {
+		t.Run(addr, func(t *testing.T) {
+			_, env := newMockEnv(t)
+			env.HBAEntries = []checker.HBAEntry{
+				{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: addr, Method: "scram-sha-256"},
+			}
+
+			c := &check_5_8{}
+			result, err := c.Run(context.Background(), env)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Status != checker.StatusPass {
+				t.Errorf("expected PASS for localhost %q, got %s", addr, result.Status)
+			}
+		})
+	}
+}
+
+func TestCheck_5_8_RejectIgnored(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: "0.0.0.0/0", Method: "reject"},
+	}
+
+	c := &check_5_8{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for reject entries, got %s", result.Status)
+	}
+}
+
+// --- 5.9: IPv6 and netmask edge cases ---
+
+func TestCheck_5_9_IPv6Unrestricted(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: "::/0", Method: "scram-sha-256"},
+	}
+
+	c := &check_5_9{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for ::/0, got %s", result.Status)
+	}
+	if result.Severity != checker.SeverityCritical {
+		t.Errorf("expected CRITICAL for ::/0, got %s", result.Severity)
+	}
+}
+
+func TestCheck_5_9_RejectIgnored(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: "0.0.0.0/0", Method: "reject"},
+	}
+
+	c := &check_5_9{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for reject entries, got %s", result.Status)
+	}
+}
+
+// --- 5.11: multiple superusers ---
+
+func TestCheck_5_11_MultipleSuperusers(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.Superusers = []string{"postgres", "admin"}
+	env.HBAEntries = []checker.HBAEntry{
+		{LineNumber: 1, Type: "hostssl", Database: "all", User: "admin", Address: "10.0.0.0/8", Method: "scram-sha-256"},
+	}
+
+	c := &check_5_11{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for superuser 'admin' with remote access, got %s", result.Status)
+	}
+}
+
 // --- networkSize ---
 
 func TestNetworkSize(t *testing.T) {

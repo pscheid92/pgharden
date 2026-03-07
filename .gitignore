@@ -22,3 +22,4 @@ Thumbs.db
 *.html
 !internal/report/templates/*.tmpl
 *.exe
+*.out

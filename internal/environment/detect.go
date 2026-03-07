@@ -19,19 +19,19 @@ var (
 	containerRe = regexp.MustCompile(`docker|kubepods|containerd`)
 )
 
-func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
-	env := &checker.Environment{DB: conn, Commands: make(map[string]bool), OS: runtime.GOOS}
+func Detect(ctx context.Context, db checker.DBQuerier) (*checker.Environment, error) {
+	env := &checker.Environment{DB: db, Commands: make(map[string]bool), OS: runtime.GOOS}
 
 	// Detect PG version
 	var versionStr string
-	if err := conn.QueryRow(ctx, "SELECT version()").Scan(&versionStr); err != nil {
+	if err := db.QueryRow(ctx, "SELECT version()").Scan(&versionStr); err != nil {
 		return nil, err
 	}
 	env.PGVersionFull = versionStr
 	env.PGVersion = parseMajorVersion(versionStr)
 
 	// Detect privileges
-	privileges, err := connection.DetectPrivileges(ctx, conn)
+	privileges, err := connection.DetectPrivileges(ctx, db)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 
 	// Detect data directory
 	var dataDir string
-	if err := conn.QueryRow(ctx, "SHOW data_directory").Scan(&dataDir); err == nil {
+	if err := db.QueryRow(ctx, "SHOW data_directory").Scan(&dataDir); err == nil {
 		env.DataDir = dataDir
 		if _, err := os.Stat(dataDir); err == nil {
 			env.HasFilesystem = true
@@ -59,7 +59,7 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	env.IsContainer = detectContainer()
 
 	// Get database list
-	dbRows, err := conn.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
+	dbRows, err := db.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
 	if err != nil {
 		slog.Warn("failed to list databases", "error", err)
 	} else {
@@ -69,7 +69,7 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	}
 
 	// Get superuser list
-	suRows, err := conn.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
+	suRows, err := db.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
 	if err != nil {
 		slog.Warn("failed to list superusers", "error", err)
 	} else {
