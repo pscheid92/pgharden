@@ -131,15 +131,14 @@ type HBAEntry struct {
 
 func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error) {
 	var val string
-	if err := db.QueryRow(ctx,
-		"SELECT setting FROM pg_settings WHERE name = $1", name,
-	).Scan(&val); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "42501" {
-			return "", ErrPermissionDenied
-		}
+	err := db.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = $1", name).Scan(&val)
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "42501" {
+		return "", ErrPermissionDenied
+	}
+	if err != nil {
 		return "", err
 	}
+
 	return val, nil
 }
 
