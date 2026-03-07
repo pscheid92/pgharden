@@ -11,7 +11,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 4 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_4_1{},
@@ -24,8 +23,6 @@ func Checks() []checker.Check {
 		&check_4_10{},
 	}
 }
-
-// --- Check 4.1 ---
 
 type check_4_1 struct{}
 
@@ -77,8 +74,6 @@ func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// --- Check 4.3 ---
-
 type check_4_3 struct{}
 
 func (c *check_4_3) ID() string { return "4.3" }
@@ -111,8 +106,6 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	return result, nil
 }
-
-// --- Check 4.4 ---
 
 type check_4_4 struct{}
 
@@ -158,8 +151,6 @@ func (c *check_4_4) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	return result, nil
 }
-
-// --- Check 4.5 ---
 
 type check_4_5 struct{}
 
@@ -219,8 +210,6 @@ func (c *check_4_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// --- Check 4.6 ---
-
 type check_4_6 struct{}
 
 func (c *check_4_6) ID() string { return "4.6" }
@@ -268,8 +257,6 @@ func (c *check_4_6) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	return result, nil
 }
-
-// --- Check 4.7 ---
 
 type check_4_7 struct{}
 
@@ -320,8 +307,6 @@ func (c *check_4_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	return result, nil
 }
-
-// --- Check 4.8 ---
 
 type check_4_8 struct{}
 
@@ -384,8 +369,6 @@ func (c *check_4_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// --- Check 4.10 ---
-
 type check_4_10 struct{}
 
 func (c *check_4_10) ID() string { return "4.10" }
@@ -404,20 +387,17 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	result := checker.NewResult(checker.SeverityWarning)
 
 	if nspacl == nil {
-		// NULL means default privileges (which includes CREATE for PUBLIC)
+		// NULL ACL = default privileges, which grants CREATE to PUBLIC
 		result.FailWarn("Public schema has default privileges (NULL ACL), which grants CREATE to PUBLIC.")
 		return result, nil
 	}
 
 	acl := *nspacl
-	// Check if PUBLIC (represented by entries without a specific role before =) has CREATE
-	// ACL format: {=UC/postgres,postgres=UC/postgres}
-	// "=UC" means PUBLIC has Usage and Create
+	// ACL format: {=UC/postgres,...} — empty grantee before "=" means PUBLIC
 	hasPublicCreate := false
 	for entry := range strings.SplitSeq(strings.Trim(acl, "{}"), ",") {
 		parts := strings.SplitN(entry, "=", 2)
 		if len(parts) == 2 && parts[0] == "" {
-			// This is the PUBLIC entry
 			privs := strings.SplitN(parts[1], "/", 2)[0]
 			if strings.Contains(strings.ToUpper(privs), "C") {
 				hasPublicCreate = true

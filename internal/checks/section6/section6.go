@@ -9,7 +9,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 6 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_6_2{},
@@ -25,7 +24,6 @@ func Checks() []checker.Check {
 	}
 }
 
-// check_6_2 - Backend runtime parameters
 type check_6_2 struct{}
 
 func (c *check_6_2) ID() string { return "6.2" }
@@ -90,7 +88,6 @@ func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// contextParamCheck is a parameterized check for pg_settings context review.
 type contextParamCheck struct {
 	id      string
 	context string
@@ -135,7 +132,6 @@ func (c *contextParamCheck) Run(ctx context.Context, env *checker.Environment) (
 	return result, nil
 }
 
-// check_6_7 - FIPS mode
 type check_6_7 struct{}
 
 func (c *check_6_7) ID() string { return "6.7" }
@@ -163,7 +159,6 @@ func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_6_8 - SSL settings
 type check_6_8 struct{}
 
 func (c *check_6_8) ID() string { return "6.8" }
@@ -218,7 +213,6 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_6_9 - Cryptographic extensions
 type check_6_9 struct{}
 
 func (c *check_6_9) ID() string { return "6.9" }
@@ -273,7 +267,6 @@ func (c *check_6_9) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_6_10 - SSL ciphers
 type check_6_10 struct{}
 
 func (c *check_6_10) ID() string { return "6.10" }
@@ -328,7 +321,6 @@ func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	return result, nil
 }
 
-// check_6_11 - Data anonymization
 type check_6_11 struct{}
 
 func (c *check_6_11) ID() string { return "6.11" }

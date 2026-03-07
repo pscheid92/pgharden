@@ -9,7 +9,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 8 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_8_2{},
@@ -17,7 +16,6 @@ func Checks() []checker.Check {
 	}
 }
 
-// check_8_2 - pgBackRest backup
 type check_8_2 struct{}
 
 func (c *check_8_2) ID() string { return "8.2" }
@@ -45,7 +43,6 @@ func (c *check_8_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_8_3 - Special file settings
 type check_8_3 struct{}
 
 func (c *check_8_3) ID() string { return "8.3" }

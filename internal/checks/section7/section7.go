@@ -9,7 +9,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 7 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_7_1{},
@@ -22,7 +21,6 @@ func Checks() []checker.Check {
 	}
 }
 
-// check_7_1 - Dedicated replication user
 type check_7_1 struct{}
 
 func (c *check_7_1) ID() string { return "7.1" }
@@ -48,7 +46,6 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 		return result, nil
 	}
 
-	// Check if the only replication user is a superuser (bad practice)
 	hasDedicated := false
 	for _, u := range replUsers {
 		isSuperuser := slices.Contains(env.Superusers, u)
@@ -75,7 +72,6 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_7_4 - Archive mode
 type check_7_4 struct{}
 
 func (c *check_7_4) ID() string { return "7.4" }
@@ -116,7 +112,6 @@ func (c *check_7_4) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_7_5 - Replication SSL
 type check_7_5 struct{}
 
 func (c *check_7_5) ID() string { return "7.5" }
@@ -138,7 +133,6 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		return result, nil
 	}
 
-	// Parse the connection string for SSL settings
 	hasSSLMode := false
 	hasSSLCompression := false
 	for part := range strings.FieldsSeq(val) {
@@ -175,7 +169,6 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Warn("primary_conninfo does not specify sslcompression")
 	}
 
-	// Set overall status if not already failed
 	if result.Status != checker.StatusFail {
 		result.Status = checker.StatusPass
 	}

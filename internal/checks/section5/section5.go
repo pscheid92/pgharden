@@ -14,7 +14,6 @@ import (
 	"github.com/pgharden/pgharden/internal/hba"
 )
 
-// Checks returns all Section 5 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_5_1{},
@@ -32,7 +31,6 @@ func Checks() []checker.Check {
 	}
 }
 
-// ensureHBA loads the HBA entries into env if not already loaded.
 func ensureHBA(ctx context.Context, env *checker.Environment) error {
 	if env.HBALoaded {
 		return nil
@@ -58,10 +56,6 @@ func ensureHBA(ctx context.Context, env *checker.Environment) error {
 	}
 	return fmt.Errorf("cannot load pg_hba.conf")
 }
-
-// ---------------------------------------------------------------------------
-// Check 5.1
-// ---------------------------------------------------------------------------
 
 type check_5_1 struct{}
 
@@ -101,10 +95,6 @@ func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.2
-// ---------------------------------------------------------------------------
-
 type check_5_2 struct{}
 
 func (c *check_5_2) ID() string { return "5.2" }
@@ -129,10 +119,6 @@ func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 5.3
-// ---------------------------------------------------------------------------
 
 type check_5_3 struct{}
 
@@ -179,10 +165,6 @@ func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.4
-// ---------------------------------------------------------------------------
-
 type check_5_4 struct{}
 
 func (c *check_5_4) ID() string { return "5.4" }
@@ -228,10 +210,6 @@ func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.5
-// ---------------------------------------------------------------------------
-
 type check_5_5 struct{}
 
 func (c *check_5_5) ID() string { return "5.5" }
@@ -266,10 +244,6 @@ func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.6
-// ---------------------------------------------------------------------------
-
 type check_5_6 struct{}
 
 func (c *check_5_6) ID() string { return "5.6" }
@@ -303,10 +277,6 @@ func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.7
-// ---------------------------------------------------------------------------
-
 type check_5_7 struct{}
 
 func (c *check_5_7) ID() string { return "5.7" }
@@ -328,7 +298,6 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	result := checker.NewResult(checker.SeverityWarning)
 
-	// Parse timeout value — SHOW returns values like "1min", "30s", or "60".
 	timeoutSec, parseErr := parsePGInterval(authTimeout)
 	if parseErr != nil {
 		return nil, fmt.Errorf("parse authentication_timeout '%s': %w", authTimeout, parseErr)
@@ -360,10 +329,6 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.8
-// ---------------------------------------------------------------------------
-
 type check_5_8 struct{}
 
 func (c *check_5_8) ID() string { return "5.8" }
@@ -381,18 +346,15 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	hasFail := false
 
 	for _, entry := range env.HBAEntries {
-		// Only flag plain "host" entries (not hostssl, hostgssenc)
 		if entry.Type != "host" {
 			continue
 		}
 
-		// Skip localhost connections
 		addr := entry.Address
 		if addr == "127.0.0.1/32" || addr == "::1/128" || addr == "localhost" || addr == "127.0.0.1" || addr == "::1" {
 			continue
 		}
 
-		// Skip reject method
 		if entry.Method == "reject" {
 			continue
 		}
@@ -408,10 +370,6 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 5.9
-// ---------------------------------------------------------------------------
 
 type check_5_9 struct{}
 
@@ -443,7 +401,6 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		// Check for all-addresses patterns
 		if addr == "0.0.0.0/0" || addr == "::/0" || addr == "all" {
 			hasCritical = true
 			result.Critical(fmt.Sprintf("Line %d: unrestricted network range '%s' (db=%s, user=%s)", entry.LineNumber, addr, entry.Database, entry.User))
@@ -473,10 +430,6 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.10
-// ---------------------------------------------------------------------------
-
 type check_5_10 struct{}
 
 func (c *check_5_10) ID() string { return "5.10" }
@@ -494,7 +447,6 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	hasWarning := false
 
 	for _, entry := range env.HBAEntries {
-		// Skip reject rules -- they're fine with 'all'
 		if entry.Method == "reject" {
 			continue
 		}
@@ -517,10 +469,6 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 5.11
-// ---------------------------------------------------------------------------
-
 type check_5_11 struct{}
 
 func (c *check_5_11) ID() string { return "5.11" }
@@ -534,7 +482,6 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		return checker.SkippedHBA(err), nil
 	}
 
-	// Load superuser list if not cached
 	if len(env.Superusers) == 0 {
 		rows, err := env.DB.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper = true")
 		if err != nil {
@@ -555,7 +502,6 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 	hasFail := false
 
 	for _, entry := range env.HBAEntries {
-		// Only check remote connection types
 		if !strings.HasPrefix(entry.Type, "host") {
 			continue
 		}
@@ -563,10 +509,8 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 			continue
 		}
 
-		// Check if this entry allows a superuser
 		user := entry.User
 		if user == "all" {
-			// 'all' includes superusers
 			hasFail = true
 			result.Critical(fmt.Sprintf("Line %d: user='all' allows superuser remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, entry.Type, entry.Address, entry.Method))
 		} else if superSet[user] {
@@ -582,10 +526,6 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 5.12
-// ---------------------------------------------------------------------------
 
 type check_5_12 struct{}
 
@@ -612,7 +552,6 @@ func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checke
 	return result, nil
 }
 
-// parsePGInterval parses a PostgreSQL time value (e.g., "1min", "30s", "60") into seconds.
 func parsePGInterval(val string) (int, error) {
 	val = strings.TrimSpace(val)
 	for _, suffix := range []struct {
@@ -636,8 +575,6 @@ func parsePGInterval(val string) (int, error) {
 	return strconv.Atoi(val)
 }
 
-// networkSize returns the number of addresses for an HBA address entry.
-// Returns (0, false) if the address can't be parsed.
 func networkSize(addr, mask string) (uint64, bool) {
 	cidr := addr
 	if mask != "" && !strings.Contains(addr, "/") {

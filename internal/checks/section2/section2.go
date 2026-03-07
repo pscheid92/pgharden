@@ -14,7 +14,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 2 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_2_1{},
@@ -27,10 +26,6 @@ func Checks() []checker.Check {
 		&check_2_8{},
 	}
 }
-
-// ---------------------------------------------------------------------------
-// Check 2.1 – Verify umask is set to 0077
-// ---------------------------------------------------------------------------
 
 type check_2_1 struct{}
 
@@ -58,10 +53,6 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 2.2 – Verify extension directory permissions
-// ---------------------------------------------------------------------------
-
 type check_2_2 struct{}
 
 func (c *check_2_2) ID() string { return "2.2" }
@@ -78,10 +69,8 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	// Replace $libdir with the actual library directory
 	var libdir string
 	if err := env.DB.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = 'pkglibdir'").Scan(&libdir); err != nil {
-		// Fall back to pg_config if possible
 		_ = env.DB.QueryRow(ctx, "SELECT pg_config('PKGLIBDIR')").Scan(&libdir)
 	}
 
@@ -125,10 +114,6 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 2.3 – Verify .psql_history is protected
-// ---------------------------------------------------------------------------
-
 type check_2_3 struct{}
 
 func (c *check_2_3) ID() string { return "2.3" }
@@ -140,7 +125,6 @@ func (c *check_2_3) Requirements() checker.CheckRequirements {
 func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	// Check common home directories for .psql_history
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
 
 	var problems []string
@@ -175,11 +159,9 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 				}
 			}
 
-			// Regular file or symlink to something other than /dev/null
 			problems = append(problems, histPath)
 		}
 
-		// For /root, we only check the one path
 		if base == "/root" {
 			continue
 		}
@@ -192,10 +174,6 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 2.4 – Verify .pg_service.conf has no passwords
-// ---------------------------------------------------------------------------
 
 type check_2_4 struct{}
 
@@ -215,7 +193,6 @@ func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker
 		entries, err := os.ReadDir(base)
 		if err != nil {
 			if base == "/root" {
-				// Check /root directly
 				checkServiceConf("/root/.pg_service.conf", &problems)
 			}
 			continue
@@ -253,10 +230,6 @@ func checkServiceConf(path string, problems *[]string) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Check 2.5 – Verify pg_hba.conf file permissions
-// ---------------------------------------------------------------------------
-
 type check_2_5 struct{}
 
 func (c *check_2_5) ID() string { return "2.5" }
@@ -288,10 +261,6 @@ func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 2.6 – Verify Unix socket directory permissions
-// ---------------------------------------------------------------------------
 
 type check_2_6 struct{}
 
@@ -339,10 +308,6 @@ func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// ---------------------------------------------------------------------------
-// Check 2.7 – Verify PGDATA directory permissions
-// ---------------------------------------------------------------------------
-
 type check_2_7 struct{}
 
 func (c *check_2_7) ID() string { return "2.7" }
@@ -368,10 +333,6 @@ func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	return result, nil
 }
-
-// ---------------------------------------------------------------------------
-// Check 2.8 – Verify PGDATA file ownership (manual check)
-// ---------------------------------------------------------------------------
 
 type check_2_8 struct{}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-// Checks returns all Section 1 checks.
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_1_1{},
@@ -31,7 +30,6 @@ func Checks() []checker.Check {
 	}
 }
 
-// check_1_1 — 1.1: Verify PostgreSQL packages are obtained from authorized repositories
 type check_1_1 struct{}
 
 func (c *check_1_1) ID() string { return "1.1" }
@@ -44,7 +42,6 @@ func (c *check_1_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	return checker.ManualResult("Manually verify that PostgreSQL packages are obtained from authorized repositories"), nil
 }
 
-// check_1_2 — 1.2: Verify PostgreSQL systemd service is enabled
 type check_1_2 struct{}
 
 func (c *check_1_2) ID() string { return "1.2" }
@@ -60,7 +57,6 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	output := strings.TrimSpace(string(out))
 
 	if err != nil {
-		// Try with wildcard pattern
 		out2, err2 := exec.CommandContext(ctx, "bash", "-c", "systemctl is-enabled postgresql*").CombinedOutput()
 		output2 := strings.TrimSpace(string(out2))
 		if err2 != nil || !strings.Contains(output2, "enabled") {
@@ -78,7 +74,6 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_3 — 1.3: Verify data cluster is initialized
 type check_1_3 struct{}
 
 func (c *check_1_3) ID() string { return "1.3" }
@@ -100,7 +95,6 @@ func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_5 — 1.5: Verify PostgreSQL is at the latest available version
 type check_1_5 struct{}
 
 func (c *check_1_5) ID() string { return "1.5" }
@@ -113,7 +107,6 @@ func (c *check_1_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	return checker.ManualResult("Manually verify PostgreSQL is at the latest available version. Running: " + env.PGVersionFull), nil
 }
 
-// check_1_6 — 1.6: Verify PGPASSWORD is not set in shell profiles
 type check_1_6 struct{}
 
 func (c *check_1_6) ID() string { return "1.6" }
@@ -131,7 +124,6 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 		"/etc/environment",
 	}
 
-	// Check common home directories for the postgres user
 	homeGuesses := []string{"/var/lib/postgresql", "/var/lib/pgsql", "/home/postgres"}
 	for _, home := range homeGuesses {
 		profileFiles = append(profileFiles,
@@ -160,7 +152,6 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_7 — 1.7: Verify PGPASSWORD is not set in process environments
 type check_1_7 struct{}
 
 func (c *check_1_7) ID() string { return "1.7" }
@@ -178,7 +169,6 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		return result, nil
 	}
 
-	// Scan /proc/*/environ for PGPASSWORD
 	matches, err := filepath.Glob("/proc/[0-9]*/environ")
 	if err != nil {
 		result.Status = checker.StatusSkipped
@@ -193,7 +183,6 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue // permission denied is expected for other users' processes
 		}
 		if strings.Contains(string(data), "PGPASSWORD") {
-			// Extract PID from path
 			parts := strings.Split(envFile, "/")
 			if len(parts) >= 3 {
 				pidsWithPassword = append(pidsWithPassword, parts[2])
@@ -209,7 +198,6 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_8 — 1.8: Audit installed extensions
 type check_1_8 struct{}
 
 func (c *check_1_8) ID() string { return "1.8" }
@@ -252,7 +240,6 @@ func (c *check_1_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_9 — 1.9: Audit custom tablespaces
 type check_1_9 struct{}
 
 func (c *check_1_9) ID() string { return "1.9" }
@@ -298,7 +285,6 @@ func (c *check_1_9) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_1_1_1 — 1.1.1: Verify PGDG repository is configured
 type check_1_1_1 struct{}
 
 func (c *check_1_1_1) ID() string { return "1.1.1" }
@@ -310,12 +296,10 @@ func (c *check_1_1_1) Requirements() checker.CheckRequirements {
 func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	// Try RPM-based check
 	if env.Commands["rpm"] {
 		return checker.ManualResult("RPM-based system detected; manually run: rpm -qa | grep pgdg"), nil
 	}
 
-	// Try DEB-based check
 	if env.HasFilesystem {
 		matches, err := filepath.Glob("/etc/apt/sources.list.d/*pgdg*")
 		if err == nil && len(matches) > 0 {
@@ -327,7 +311,6 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 			return result, nil
 		}
 
-		// Check sources.list
 		data, err := os.ReadFile("/etc/apt/sources.list")
 		if err == nil && strings.Contains(string(data), "pgdg") {
 			result.Pass("PGDG repository found in /etc/apt/sources.list")
@@ -338,7 +321,6 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 	return checker.ManualResult("Unable to determine repository source; manually verify PGDG repository is configured"), nil
 }
 
-// check_1_4_1 — 1.4.1: Verify PG_VERSION matches running version
 type check_1_4_1 struct{}
 
 func (c *check_1_4_1) ID() string { return "1.4.1" }
@@ -368,7 +350,6 @@ func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*check
 	return result, nil
 }
 
-// check_1_4_2 — 1.4.2: Verify PGDATA/PG_VERSION consistency with server
 type check_1_4_2 struct{}
 
 func (c *check_1_4_2) ID() string { return "1.4.2" }
@@ -389,7 +370,6 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 
 	fileVersion := strings.TrimSpace(string(data))
 
-	// Get the version from the server
 	serverVersion, err := checker.ShowSetting(ctx, env.DB, "server_version_num")
 	if err != nil {
 		return nil, err
@@ -414,7 +394,6 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 	return result, nil
 }
 
-// check_1_4_3 — 1.4.3: Verify data checksums are enabled
 type check_1_4_3 struct{}
 
 func (c *check_1_4_3) ID() string { return "1.4.3" }
@@ -438,7 +417,6 @@ func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*check
 	return result, nil
 }
 
-// check_1_4_4 — 1.4.4: Verify WAL and temp files are on separate storage
 type check_1_4_4 struct{}
 
 func (c *check_1_4_4) ID() string { return "1.4.4" }
@@ -450,12 +428,10 @@ func (c *check_1_4_4) Requirements() checker.CheckRequirements {
 func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	// Check if pg_wal is a symlink (separate storage)
 	pgWal := filepath.Join(env.DataDir, "pg_wal")
 	walInfo, err := os.Lstat(pgWal)
 	walSymlink := err == nil && walInfo.Mode()&os.ModeSymlink != 0
 
-	// Check temp_tablespaces
 	tempTablespaces, err := checker.ShowSetting(ctx, env.DB, "temp_tablespaces")
 	if err != nil {
 		return nil, err
@@ -475,7 +451,6 @@ func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*check
 	return result, nil
 }
 
-// check_1_4_5 — 1.4.5: Audit storage type
 type check_1_4_5 struct{}
 
 func (c *check_1_4_5) ID() string { return "1.4.5" }

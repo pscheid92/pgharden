@@ -9,7 +9,6 @@ import (
 
 var sqlOnly = checker.CheckRequirements{SQLOnly: true}
 
-// Checks returns all Section 3 checks.
 func Checks() []checker.Check {
 	checks := []checker.Check{
 		&check_3_2{},
@@ -48,8 +47,6 @@ var settingChecks = []checker.SettingCheck{
 	{CheckID: "3.1.26", Setting: "log_hostname", Expected: "off", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 	{CheckID: "3.1.27", Setting: "log_duration", Expected: "off", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 }
-
-// --- check 3.2: pgaudit (multi-step, kept as custom) ---
 
 type check_3_2 struct{}
 
@@ -93,8 +90,6 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	return result, nil
 }
-
-// --- check 3.1.22: log_line_prefix token check (kept as custom) ---
 
 type check_3_1_22 struct{}
 
