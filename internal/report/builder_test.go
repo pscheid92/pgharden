@@ -1,7 +1,6 @@
 package report
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/pgharden/pgharden/internal/checker"
@@ -14,7 +13,7 @@ func TestBuildSummaryCounts(t *testing.T) {
 		{CheckID: "1.3", Result: &checker.CheckResult{Status: checker.StatusFail, Severity: checker.SeverityCritical}},
 		{CheckID: "1.4", Result: &checker.CheckResult{Status: checker.StatusSkipped, SkipReason: "no access"}},
 		{CheckID: "1.5", Result: &checker.CheckResult{Status: checker.StatusManual, Severity: checker.SeverityInfo}},
-		{CheckID: "2.1", Err: fmt.Errorf("query failed")},
+		{CheckID: "2.1", Result: &checker.CheckResult{Status: checker.StatusFail, Severity: checker.SeverityCritical, Messages: []checker.Message{{Level: checker.LevelCritical, Content: "query failed"}}}},
 	}
 
 	rpt := Build(results, nil, Metadata{})

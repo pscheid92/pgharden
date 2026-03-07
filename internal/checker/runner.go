@@ -20,7 +20,6 @@ type Runner struct {
 type RunResult struct {
 	CheckID string
 	Result  *CheckResult
-	Err     error
 }
 
 func (r *Runner) RunAll(ctx context.Context) []RunResult {
@@ -125,5 +124,9 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 	}
 
 	result, err := c.Run(ctx, r.Env)
-	return RunResult{CheckID: id, Result: result, Err: err}
+	if err != nil {
+		result = &CheckResult{Status: StatusFail, Severity: SeverityCritical}
+		result.Critical(err.Error())
+	}
+	return RunResult{CheckID: id, Result: result}
 }

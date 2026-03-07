@@ -30,7 +30,6 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 		},
 	}
 
-	// Group results by section
 	sections := make(map[string]*CategoryReport)
 
 	for _, rr := range results {
@@ -54,31 +53,25 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 			Description: labels.CheckDescription(rr.CheckID),
 		}
 
-		if rr.Err != nil {
-			cr.Status = "ERROR"
-			cr.Messages = []MsgEntry{{Level: "ERROR", Content: rr.Err.Error()}}
+		cr.Status = rr.Result.Status.String()
+		cr.Severity = rr.Result.Severity.String()
+		cr.SkipReason = rr.Result.SkipReason
+		cr.Details = rr.Result.Details
+
+		for _, m := range rr.Result.Messages {
+			cr.Messages = append(cr.Messages, MsgEntry{Level: m.Level, Content: m.Content})
+		}
+
+		switch rr.Result.Status {
+		case checker.StatusPass:
+			r.Summary.Passed++
+		case checker.StatusFail:
 			r.Summary.Failed++
-		} else if rr.Result != nil {
-			cr.Status = rr.Result.Status.String()
-			cr.Severity = rr.Result.Severity.String()
-			cr.SkipReason = rr.Result.SkipReason
-			cr.Details = rr.Result.Details
-
-			for _, m := range rr.Result.Messages {
-				cr.Messages = append(cr.Messages, MsgEntry{Level: m.Level, Content: m.Content})
-			}
-
-			switch rr.Result.Status {
-			case checker.StatusPass:
-				r.Summary.Passed++
-			case checker.StatusFail:
-				r.Summary.Failed++
-				r.Summary.BySeverity[cr.Severity]++
-			case checker.StatusSkipped:
-				r.Summary.Skipped++
-			case checker.StatusManual:
-				r.Summary.Manual++
-			}
+			r.Summary.BySeverity[cr.Severity]++
+		case checker.StatusSkipped:
+			r.Summary.Skipped++
+		case checker.StatusManual:
+			r.Summary.Manual++
 		}
 
 		r.Summary.Total++
