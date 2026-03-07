@@ -67,6 +67,10 @@ func registerFlags(cmd *cobra.Command, cfg *config.Config, opts *RunOptions, con
 	f.StringSliceVarP(&cfg.AllowDatabases, "allow", "a", nil, "Only check these databases")
 	f.StringSliceVarP(&cfg.ExcludeDatabases, "exclude-db", "e", nil, "Exclude these databases")
 
+	// Environment
+	f.StringVar(&cfg.Platform, "platform", "", "Override platform detection (bare-metal, container, zalando, rds, aurora)")
+	f.BoolVar(&cfg.Local, "local", false, "Enable filesystem and OS command checks (use only when running on the PostgreSQL host)")
+
 	// Config
 	f.StringVar(&cfg.Profile, "profile", "", "Configuration profile to use")
 	f.StringVarP(configFile, "config", "c", "", "Path to YAML config file")

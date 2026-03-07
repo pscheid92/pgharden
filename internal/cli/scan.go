@@ -64,13 +64,19 @@ func connect(ctx context.Context, cfg *config.Config) (*pgx.Conn, *checker.Envir
 	}
 	env.AllowDatabases = cfg.AllowDatabases
 	env.ExcludeDatabases = cfg.ExcludeDatabases
+	if cfg.Platform != "" {
+		env.Platform = cfg.Platform
+	}
+	if cfg.Local {
+		environment.EnableLocal(env)
+	}
 
 	slog.Info("connected",
 		"pg_version", env.PGVersion,
 		"pg_version_full", env.PGVersionFull,
 		"superuser", env.IsSuperuser,
 		"filesystem", env.HasFilesystem,
-		"container", env.IsContainer,
+		"platform", env.Platform,
 	)
 
 	return conn, env, nil

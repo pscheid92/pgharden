@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
@@ -39,24 +40,14 @@ func Detect(ctx context.Context, db checker.DBQuerier) (*checker.Environment, er
 	env.IsRDSSuperuser = privileges.IsRDSSuperuser
 	env.IsPGMonitor = privileges.IsPGMonitor
 
-	// Detect data directory
+	// Detect data directory (always query for reporting, but don't enable filesystem)
 	var dataDir string
 	if err := db.QueryRow(ctx, "SHOW data_directory").Scan(&dataDir); err == nil {
 		env.DataDir = dataDir
-		if _, err := os.Stat(dataDir); err == nil {
-			env.HasFilesystem = true
-		}
 	}
 
-	// Detect available commands
-	for _, cmd := range []string{"systemctl", "rpm", "dpkg", "lsblk", "pgbackrest", "curl"} {
-		if _, err := exec.LookPath(cmd); err == nil {
-			env.Commands[cmd] = true
-		}
-	}
-
-	// Detect container environment
-	env.IsContainer = detectContainer()
+	// Detect platform
+	env.Platform = detectPlatform(ctx, db, env)
 
 	// Get database list
 	dbRows, err := db.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
@@ -90,7 +81,60 @@ func parseMajorVersion(versionStr string) int {
 	return 0
 }
 
-func detectContainer() bool {
+func detectPlatform(ctx context.Context, db checker.DBQuerier, env *checker.Environment) string {
+	// RDS/Aurora: rds_superuser role exists
+	if env.IsRDSSuperuser {
+		return detectRDSOrAurora(ctx, db)
+	}
+	var rdsCount int
+	if err := db.QueryRow(ctx, "SELECT COUNT(*) FROM pg_roles WHERE rolname = 'rds_superuser'").Scan(&rdsCount); err == nil && rdsCount > 0 {
+		return detectRDSOrAurora(ctx, db)
+	}
+
+	// Zalando operator: archive_command or restore_command references /controller/manager
+	for _, setting := range []string{"archive_command", "restore_command"} {
+		var val string
+		if err := db.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = $1", setting).Scan(&val); err == nil {
+			if strings.Contains(val, "/controller/manager") {
+				return checker.PlatformZalando
+			}
+		}
+	}
+
+	// Local container detection (when running inside the same container)
+	if isLocalContainer() {
+		return checker.PlatformContainer
+	}
+
+	return checker.PlatformBareMetal
+}
+
+func detectRDSOrAurora(ctx context.Context, db checker.DBQuerier) string {
+	var engine string
+	// aurora_version() exists only on Aurora
+	if err := db.QueryRow(ctx, "SELECT aurora_version()").Scan(&engine); err == nil {
+		return checker.PlatformAurora
+	}
+	return checker.PlatformRDS
+}
+
+// EnableLocal enables filesystem and OS command checks on the environment.
+// Only call this when pgharden is running on the same host as PostgreSQL.
+func EnableLocal(env *checker.Environment) {
+	if env.DataDir != "" {
+		if _, err := os.Stat(env.DataDir); err == nil {
+			env.HasFilesystem = true
+		}
+	}
+
+	for _, cmd := range []string{"systemctl", "sh", "rpm", "dpkg", "lsblk", "pgbackrest", "curl", "ps", "fips-mode-setup"} {
+		if _, err := exec.LookPath(cmd); err == nil {
+			env.Commands[cmd] = true
+		}
+	}
+}
+
+func isLocalContainer() bool {
 	if _, err := os.Stat("/.dockerenv"); err == nil {
 		return true
 	}

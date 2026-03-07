@@ -16,11 +16,7 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 		meta.PGVersionMajor = env.PGVersion
 		meta.IsSuperuser = env.IsSuperuser
 
-		if env.IsContainer {
-			meta.EnvironmentType = "container"
-		} else {
-			meta.EnvironmentType = "bare-metal"
-		}
+		meta.EnvironmentType = env.Platform
 	}
 
 	r := &Report{

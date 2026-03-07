@@ -14,6 +14,15 @@ import (
 
 var ErrPermissionDenied = errors.New("permission denied")
 
+// Platform constants for environment detection.
+const (
+	PlatformBareMetal = "bare-metal"
+	PlatformContainer = "container"
+	PlatformZalando   = "zalando"
+	PlatformRDS       = "rds"
+	PlatformAurora    = "aurora"
+)
+
 type Severity int
 
 const (
@@ -157,7 +166,7 @@ type Environment struct {
 	// Capabilities
 	HasFilesystem bool
 	Commands      map[string]bool
-	IsContainer   bool
+	Platform      string // detected or user-specified platform
 	OS            string
 
 	// Databases to check

@@ -28,6 +28,10 @@ type Config struct {
 	AllowDatabases   []string `yaml:"allow_databases"`
 	ExcludeDatabases []string `yaml:"exclude_databases"`
 
+	// Environment
+	Platform string `yaml:"platform"` // Override auto-detected platform (bare-metal, container, zalando, rds, aurora).
+	Local    bool   `yaml:"local"`    // Enable filesystem and command checks (only when running on the PG host).
+
 	// Profiles
 	Profile  string              `yaml:"profile"`
 	Profiles map[string]*Profile `yaml:"profiles"`
