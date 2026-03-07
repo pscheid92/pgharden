@@ -7,24 +7,22 @@ import (
 	"strings"
 )
 
-// Runner orchestrates check execution with filtering and skip logic.
 type Runner struct {
-	Checks         []Check // The checks to run.
-	Env            *Environment
+	Env *Environment
+
+	Checks         []Check  // The checks to run.
 	IncludeChecks  []string // If non-empty, only run these check IDs.
 	ExcludeChecks  []string // Skip these check IDs.
 	IncludeSection string   // If set, only run checks in this section (e.g., "3").
 	MinSeverity    Severity // Only report checks at or above this severity.
 }
 
-// RunResult holds the outcome of a single check execution.
 type RunResult struct {
 	CheckID string
 	Result  *CheckResult
 	Err     error
 }
 
-// RunAll executes all checks, respecting filters and requirements.
 func (r *Runner) RunAll(ctx context.Context) []RunResult {
 	checks := r.Checks
 	results := make([]RunResult, 0, len(checks))
@@ -72,21 +70,19 @@ func (r *Runner) shouldSkip(c Check) bool {
 
 func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 	id := c.ID()
-	reqs := c.Requirements()
+	requirements := c.Requirements()
 
-	// Check PG version requirement
-	if reqs.MinPGVersion > 0 && r.Env.PGVersion < reqs.MinPGVersion {
+	if requirements.MinPGVersion > 0 && r.Env.PGVersion < requirements.MinPGVersion {
 		return RunResult{
 			CheckID: id,
 			Result: &CheckResult{
 				Status:     StatusSkipped,
-				SkipReason: fmt.Sprintf("Requires PostgreSQL %d+, running %d", reqs.MinPGVersion, r.Env.PGVersion),
+				SkipReason: fmt.Sprintf("Requires PostgreSQL %d+, running %d", requirements.MinPGVersion, r.Env.PGVersion),
 			},
 		}
 	}
 
-	// Check superuser requirement
-	if reqs.Superuser && !r.Env.IsSuperuser && !r.Env.IsRDSSuperuser {
+	if requirements.Superuser && !r.Env.IsSuperuser && !r.Env.IsRDSSuperuser {
 		return RunResult{
 			CheckID: id,
 			Result: &CheckResult{
@@ -96,8 +92,7 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 		}
 	}
 
-	// Check pg_monitor requirement
-	if reqs.PGMonitor && !r.Env.IsPGMonitor && !r.Env.IsSuperuser {
+	if requirements.PGMonitor && !r.Env.IsPGMonitor && !r.Env.IsSuperuser {
 		return RunResult{
 			CheckID: id,
 			Result: &CheckResult{
@@ -107,8 +102,7 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 		}
 	}
 
-	// Check filesystem requirement
-	if reqs.Filesystem && !r.Env.HasFilesystem {
+	if requirements.Filesystem && !r.Env.HasFilesystem {
 		return RunResult{
 			CheckID: id,
 			Result: &CheckResult{
@@ -118,8 +112,7 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 		}
 	}
 
-	// Check command requirements
-	for _, cmd := range reqs.Commands {
+	for _, cmd := range requirements.Commands {
 		if !r.Env.Commands[cmd] {
 			return RunResult{
 				CheckID: id,
@@ -131,11 +124,6 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 		}
 	}
 
-	// Run the check
 	result, err := c.Run(ctx, r.Env)
-	return RunResult{
-		CheckID: id,
-		Result:  result,
-		Err:     err,
-	}
+	return RunResult{CheckID: id, Result: result, Err: err}
 }

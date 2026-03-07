@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/pgharden/pgharden/internal/buildinfo"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/config"
@@ -48,7 +50,7 @@ func run(ctx context.Context, cfg *config.Config, opts *RunOptions) (int, error)
 	return exitCodeFromReport(rpt), nil
 }
 
-func connect(ctx context.Context, cfg *config.Config) (*connection.Conn, *checker.Environment, error) {
+func connect(ctx context.Context, cfg *config.Config) (*pgx.Conn, *checker.Environment, error) {
 	fmt.Fprintf(os.Stderr, "Connecting to %s:%d as %s...\n", cfg.Host, cfg.Port, cfg.User)
 	conn, err := connection.Connect(ctx, cfg.ConnString())
 	if err != nil {

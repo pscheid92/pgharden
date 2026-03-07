@@ -13,7 +13,8 @@ type Privileges struct {
 	IsPGMonitor    bool
 }
 
-func detectPrivileges(ctx context.Context, conn *pgx.Conn) (*Privileges, error) {
+// DetectPrivileges probes the connected user's privilege level.
+func DetectPrivileges(ctx context.Context, conn *pgx.Conn) (*Privileges, error) {
 	p := &Privileges{}
 
 	// Check superuser — direct attribute, no inheritance needed.

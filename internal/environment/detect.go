@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/connection"
 )
@@ -19,9 +20,9 @@ var (
 )
 
 // Detect probes the runtime environment and builds a checker.Environment.
-func Detect(ctx context.Context, conn *connection.Conn) (*checker.Environment, error) {
+func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	env := &checker.Environment{
-		DB:       conn.DB(),
+		DB:       conn,
 		Commands: make(map[string]bool),
 		OS:       runtime.GOOS,
 	}
@@ -35,7 +36,7 @@ func Detect(ctx context.Context, conn *connection.Conn) (*checker.Environment, e
 	env.PGVersion = parseMajorVersion(versionStr)
 
 	// Detect privileges
-	privs, err := conn.DetectPrivileges(ctx)
+	privs, err := connection.DetectPrivileges(ctx, conn)
 	if err != nil {
 		return nil, err
 	}
