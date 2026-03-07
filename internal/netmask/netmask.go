@@ -2,7 +2,7 @@ package netmask
 
 import (
 	"fmt"
-	"math/bits"
+	"net"
 	"net/netip"
 	"strings"
 )
@@ -10,21 +10,9 @@ import (
 // NetworkSize returns the number of addresses in a CIDR range.
 // Accepts "192.168.1.0/24" or "192.168.1.0 255.255.255.0" format.
 func NetworkSize(cidr string) (uint64, error) {
-	// Handle "IP netmask" format
-	if !strings.Contains(cidr, "/") && strings.Contains(cidr, " ") {
-		parts := strings.Fields(cidr)
-		if len(parts) == 2 {
-			prefix, err := netmaskToPrefix(parts[0], parts[1])
-			if err != nil {
-				return 0, err
-			}
-			cidr = prefix
-		}
-	}
-
-	prefix, err := netip.ParsePrefix(cidr)
+	prefix, err := ParseCIDR(cidr)
 	if err != nil {
-		return 0, fmt.Errorf("parsing CIDR %q: %w", cidr, err)
+		return 0, err
 	}
 
 	bits := prefix.Addr().BitLen() // 32 for IPv4, 128 for IPv6
@@ -33,15 +21,13 @@ func NetworkSize(cidr string) (uint64, error) {
 		return 1, nil
 	}
 	if hostBits > 63 {
-		// Very large range, cap at max uint64
 		return ^uint64(0), nil
 	}
 	return 1 << uint(hostBits), nil
 }
 
-// ParseCIDR parses a CIDR string and returns the prefix.
+// ParseCIDR parses a CIDR or "IP netmask" string into a netip.Prefix.
 func ParseCIDR(cidr string) (netip.Prefix, error) {
-	// Handle "IP netmask" format
 	if !strings.Contains(cidr, "/") && strings.Contains(cidr, " ") {
 		parts := strings.Fields(cidr)
 		if len(parts) == 2 {
@@ -57,33 +43,17 @@ func ParseCIDR(cidr string) (netip.Prefix, error) {
 
 // netmaskToPrefix converts "192.168.1.0" + "255.255.255.0" to "192.168.1.0/24".
 func netmaskToPrefix(ip, mask string) (string, error) {
-	maskAddr, err := netip.ParseAddr(mask)
-	if err != nil {
-		return "", fmt.Errorf("parsing netmask %q: %w", mask, err)
+	m := net.ParseIP(mask)
+	if m == nil {
+		return "", fmt.Errorf("invalid netmask %q", mask)
 	}
 
-	// Use the native-size byte representation to avoid IPv4-in-IPv6 mapping issues.
-	var maskBytes []byte
-	if maskAddr.Is4() {
-		b := maskAddr.As4()
-		maskBytes = b[:]
-	} else {
-		b := maskAddr.As16()
-		maskBytes = b[:]
+	// net.IPMask.Size() returns the prefix length directly.
+	ones, _ := net.IPMask(m.To4()).Size()
+	if ones == 0 {
+		// Try as IPv6 mask.
+		ones, _ = net.IPMask(m.To16()).Size()
 	}
 
-	// Count leading 1-bits across all bytes.
-	prefix := 0
-	for _, b := range maskBytes {
-		if b == 0xff {
-			prefix += 8
-			continue
-		}
-		// Count leading ones in this byte, then stop — a valid netmask
-		// has no more 1-bits after the first 0-bit.
-		prefix += bits.LeadingZeros8(^b)
-		break
-	}
-
-	return fmt.Sprintf("%s/%d", ip, prefix), nil
+	return fmt.Sprintf("%s/%d", ip, ones), nil
 }

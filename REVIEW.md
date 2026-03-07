@@ -14,8 +14,7 @@
 
 ## 3. Supporting packages
 - [x] `internal/hba/types.go` — auth method classification
-- [x] `internal/hba/parser.go` — pg_hba.conf file parser
-- [ ] `internal/hba/sqlparser.go` — pg_hba_file_rules SQL loader
+- [x] `internal/hba/parser.go` — pg_hba.conf file parser + pg_hba_file_rules SQL loader
 - [ ] `internal/netmask/netmask.go` — CIDR/netmask utilities
 - [ ] `internal/labels/labels.go` — i18n lookup
 - [ ] `internal/labels/en_us.go` — English labels (fr_fr.go, zh_cn.go same shape)
@@ -52,7 +51,7 @@
 - [ ] `internal/checker/setting_check_test.go` — all comparators, errors
 - [ ] `internal/checker/runner_test.go` — filtering, skip logic
 - [ ] `internal/cli/integration_test.go` — full pipeline with testcontainers
-- [ ] `internal/hba/parser_test.go` — local/host/hostssl/netmask/include
+- [ ] `internal/hba/parser_test.go` — file parsing, includes, auth methods
 - [ ] `internal/hba/types_test.go` — auth method classification
 - [ ] `internal/netmask/netmask_test.go` — CIDR, netmask format, IPv6
 - [ ] `internal/config/config_test.go` — defaults, YAML, profiles, ConnString
