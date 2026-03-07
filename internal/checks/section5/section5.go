@@ -112,8 +112,7 @@ func (c *check_5_2) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var listenAddr string
-	err := env.DB.QueryRow(ctx, "SHOW listen_addresses").Scan(&listenAddr)
+	listenAddr, err := checker.ShowSetting(ctx, env.DB, "listen_addresses")
 	if err != nil {
 		return nil, fmt.Errorf("query listen_addresses: %w", err)
 	}
@@ -301,8 +300,7 @@ func (c *check_5_6) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var libs string
-	err := env.DB.QueryRow(ctx, "SHOW shared_preload_libraries").Scan(&libs)
+	libs, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
 	if err != nil {
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
@@ -339,14 +337,12 @@ func (c *check_5_7) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var authTimeout string
-	err := env.DB.QueryRow(ctx, "SHOW authentication_timeout").Scan(&authTimeout)
+	authTimeout, err := checker.ShowSetting(ctx, env.DB, "authentication_timeout")
 	if err != nil {
 		return nil, fmt.Errorf("query authentication_timeout: %w", err)
 	}
 
-	var libs string
-	err = env.DB.QueryRow(ctx, "SHOW shared_preload_libraries").Scan(&libs)
+	libs, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
 	if err != nil {
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
@@ -668,8 +664,7 @@ func (c *check_5_12) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var passEnc string
-	err := env.DB.QueryRow(ctx, "SHOW password_encryption").Scan(&passEnc)
+	passEnc, err := checker.ShowSetting(ctx, env.DB, "password_encryption")
 	if err != nil {
 		return nil, fmt.Errorf("query password_encryption: %w", err)
 	}

@@ -412,8 +412,8 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 	fileVersion := strings.TrimSpace(string(data))
 
 	// Get the version from the server
-	var serverVersion string
-	if err := env.DB.QueryRow(ctx, "SHOW server_version_num").Scan(&serverVersion); err != nil {
+	serverVersion, err := checker.ShowSetting(ctx, env.DB, "server_version_num")
+	if err != nil {
 		return nil, err
 	}
 
@@ -449,8 +449,8 @@ func (c *check_1_4_3) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var val string
-	if err := env.DB.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = 'data_checksums'").Scan(&val); err != nil {
+	val, err := checker.ShowSetting(ctx, env.DB, "data_checksums")
+	if err != nil {
 		return nil, err
 	}
 
@@ -481,8 +481,8 @@ func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*check
 	walSymlink := err == nil && walInfo.Mode()&os.ModeSymlink != 0
 
 	// Check temp_tablespaces
-	var tempTablespaces string
-	if err := env.DB.QueryRow(ctx, "SHOW temp_tablespaces").Scan(&tempTablespaces); err != nil {
+	tempTablespaces, err := checker.ShowSetting(ctx, env.DB, "temp_tablespaces")
+	if err != nil {
 		return nil, err
 	}
 

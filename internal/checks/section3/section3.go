@@ -107,8 +107,8 @@ func (c *check_3_1_22) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var val string
-	if err := env.DB.QueryRow(ctx, "SHOW log_line_prefix").Scan(&val); err != nil {
+	val, err := checker.ShowSetting(ctx, env.DB, "log_line_prefix")
+	if err != nil {
 		return nil, err
 	}
 

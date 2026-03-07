@@ -308,19 +308,17 @@ func (c *check_6_8) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var sslOn, sslMinVersion, sslPassCmd string
-
-	err := env.DB.QueryRow(ctx, "SHOW ssl").Scan(&sslOn)
+	sslOn, err := checker.ShowSetting(ctx, env.DB, "ssl")
 	if err != nil {
 		return nil, fmt.Errorf("query ssl: %w", err)
 	}
 
-	err = env.DB.QueryRow(ctx, "SHOW ssl_min_protocol_version").Scan(&sslMinVersion)
+	sslMinVersion, err := checker.ShowSetting(ctx, env.DB, "ssl_min_protocol_version")
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_min_protocol_version: %w", err)
 	}
 
-	err = env.DB.QueryRow(ctx, "SHOW ssl_passphrase_command").Scan(&sslPassCmd)
+	sslPassCmd, err := checker.ShowSetting(ctx, env.DB, "ssl_passphrase_command")
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_passphrase_command: %w", err)
 	}
@@ -451,8 +449,7 @@ var allowedCiphers = map[string]bool{
 }
 
 func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var ciphers string
-	err := env.DB.QueryRow(ctx, "SHOW ssl_ciphers").Scan(&ciphers)
+	ciphers, err := checker.ShowSetting(ctx, env.DB, "ssl_ciphers")
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_ciphers: %w", err)
 	}
@@ -494,8 +491,7 @@ func (c *check_6_11) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var libs string
-	err := env.DB.QueryRow(ctx, "SHOW session_preload_libraries").Scan(&libs)
+	libs, err := checker.ShowSetting(ctx, env.DB, "session_preload_libraries")
 	if err != nil {
 		return nil, fmt.Errorf("query session_preload_libraries: %w", err)
 	}

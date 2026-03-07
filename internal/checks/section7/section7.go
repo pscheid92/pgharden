@@ -134,8 +134,8 @@ func (c *check_7_5) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	var val string
-	if err := env.DB.QueryRow(ctx, "SHOW primary_conninfo").Scan(&val); err != nil {
+	val, err := checker.ShowSetting(ctx, env.DB, "primary_conninfo")
+	if err != nil {
 		return nil, err
 	}
 

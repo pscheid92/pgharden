@@ -73,8 +73,8 @@ func (c *check_2_2) Requirements() checker.CheckRequirements {
 func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	var dynPath string
-	if err := env.DB.QueryRow(ctx, "SHOW dynamic_library_path").Scan(&dynPath); err != nil {
+	dynPath, err := checker.ShowSetting(ctx, env.DB, "dynamic_library_path")
+	if err != nil {
 		return nil, err
 	}
 
@@ -268,8 +268,8 @@ func (c *check_2_5) Requirements() checker.CheckRequirements {
 func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityCritical)
 
-	var hbaFile string
-	if err := env.DB.QueryRow(ctx, "SHOW hba_file").Scan(&hbaFile); err != nil {
+	hbaFile, err := checker.ShowSetting(ctx, env.DB, "hba_file")
+	if err != nil {
 		return nil, err
 	}
 
@@ -304,8 +304,8 @@ func (c *check_2_6) Requirements() checker.CheckRequirements {
 func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	var sockDirs string
-	if err := env.DB.QueryRow(ctx, "SHOW unix_socket_directories").Scan(&sockDirs); err != nil {
+	sockDirs, err := checker.ShowSetting(ctx, env.DB, "unix_socket_directories")
+	if err != nil {
 		return nil, err
 	}
 
