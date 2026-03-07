@@ -1,6 +1,7 @@
 package report
 
 import (
+	"slices"
 	"strings"
 	"time"
 
@@ -8,13 +9,13 @@ import (
 	"github.com/pgharden/pgharden/internal/labels"
 )
 
-// Build constructs a Report from check results and environment info.
 func Build(results []checker.RunResult, env *checker.Environment, meta Metadata) *Report {
 	meta.Timestamp = time.Now().UTC()
 	if env != nil {
 		meta.PGVersion = env.PGVersionFull
 		meta.PGVersionMajor = env.PGVersion
 		meta.IsSuperuser = env.IsSuperuser
+
 		if env.IsContainer {
 			meta.EnvironmentType = "container"
 		} else {
@@ -31,7 +32,6 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 
 	// Group results by section
 	sections := make(map[string]*CategoryReport)
-	var sectionOrder []string
 
 	for _, rr := range results {
 		sectionID := rr.CheckID
@@ -46,7 +46,6 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 				Title: labels.SectionTitle(sectionID),
 			}
 			sections[sectionID] = cat
-			sectionOrder = append(sectionOrder, sectionID)
 		}
 
 		cr := CheckReport{
@@ -86,9 +85,12 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata)
 		cat.Checks = append(cat.Checks, cr)
 	}
 
-	for _, sid := range sectionOrder {
-		r.Categories = append(r.Categories, *sections[sid])
+	for _, cat := range sections {
+		r.Categories = append(r.Categories, *cat)
 	}
+	slices.SortFunc(r.Categories, func(a, b CategoryReport) int {
+		return checker.CompareCheckIDs(a.ID, b.ID)
+	})
 
 	return r
 }
