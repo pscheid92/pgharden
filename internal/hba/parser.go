@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// LoadFromFile parses a pg_hba.conf file, following include directives.
 func LoadFromFile(path string) ([]Entry, error) {
 	return parseFile(path, 0)
 }
@@ -54,8 +53,6 @@ func parseFile(path string, depth int) ([]Entry, error) {
 	return entries, scanner.Err()
 }
 
-// parseInclude handles include, include_if_exists, and include_dir directives.
-// Returns (entries, handled, error). If handled is false, the line is not an include.
 func parseInclude(line, parentPath string, depth int) ([]Entry, bool, error) {
 	if after, ok := strings.CutPrefix(line, "include_dir "); ok {
 		entries, _ := parseIncludeDir(strings.TrimSpace(after), parentPath, depth)
@@ -82,6 +79,7 @@ func parseInclude(line, parentPath string, depth int) ([]Entry, bool, error) {
 
 func parseIncludeDir(dir, parentPath string, depth int) ([]Entry, error) {
 	dir = resolveIncludePath(dir, parentPath)
+
 	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err

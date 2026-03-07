@@ -8,13 +8,13 @@
 ## 2. Infrastructure
 - [x] `internal/connection/connection.go` — Connect(), returns *pgx.Conn
 - [x] `internal/connection/privileges.go` — DetectPrivileges() with pg_has_role
-- [ ] `internal/environment/detect.go` — PG version, privileges, filesystem, containers
-- [ ] `internal/config/config.go` — YAML config, profiles, ConnString
-- [ ] `internal/buildinfo/buildinfo.go` — version/commit/date injection
+- [x] `internal/environment/detect.go` — PG version, privileges, filesystem, containers
+- [x] `internal/config/config.go` — YAML config, profiles, ConnString
+- [x] `internal/buildinfo/buildinfo.go` — version/commit/date injection
 
 ## 3. Supporting packages
-- [ ] `internal/hba/types.go` — auth method classification
-- [ ] `internal/hba/parser.go` — pg_hba.conf file parser
+- [x] `internal/hba/types.go` — auth method classification
+- [x] `internal/hba/parser.go` — pg_hba.conf file parser
 - [ ] `internal/hba/sqlparser.go` — pg_hba_file_rules SQL loader
 - [ ] `internal/netmask/netmask.go` — CIDR/netmask utilities
 - [ ] `internal/labels/labels.go` — i18n lookup

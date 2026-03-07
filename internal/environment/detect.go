@@ -63,8 +63,7 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	if err != nil {
 		slog.Warn("failed to list databases", "error", err)
 	} else {
-		env.Databases, err = pgx.CollectRows(dbRows, pgx.RowTo[string])
-		if err != nil {
+		if env.Databases, err = pgx.CollectRows(dbRows, pgx.RowTo[string]); err != nil {
 			slog.Warn("failed to collect databases", "error", err)
 		}
 	}
@@ -74,8 +73,7 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	if err != nil {
 		slog.Warn("failed to list superusers", "error", err)
 	} else {
-		env.Superusers, err = pgx.CollectRows(suRows, pgx.RowTo[string])
-		if err != nil {
+		if env.Superusers, err = pgx.CollectRows(suRows, pgx.RowTo[string]); err != nil {
 			slog.Warn("failed to collect superusers", "error", err)
 		}
 	}
@@ -98,11 +96,5 @@ func detectContainer() bool {
 	}
 
 	data, err := os.ReadFile("/proc/1/cgroup")
-	if err == nil {
-		if containerRe.MatchString(string(data)) {
-			return true
-		}
-	}
-
-	return false
+	return err == nil && containerRe.MatchString(string(data))
 }
