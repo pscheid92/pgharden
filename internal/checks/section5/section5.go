@@ -304,26 +304,17 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	hasAuthDelay := strings.Contains(strings.ToLower(libs), "auth_delay")
-	failed := false
 
 	if timeoutSec > 60 {
-		failed = true
-		result.Warn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
+		result.FailWarn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
 	} else {
 		result.Info(fmt.Sprintf("authentication_timeout is %ds.", timeoutSec))
 	}
 
 	if !hasAuthDelay {
-		failed = true
-		result.Warn("auth_delay is not loaded in shared_preload_libraries.")
+		result.FailWarn("auth_delay is not loaded in shared_preload_libraries.")
 	} else {
 		result.Info("auth_delay is loaded in shared_preload_libraries.")
-	}
-
-	if failed {
-		result.Status = checker.StatusFail
-	} else {
-		result.Status = checker.StatusPass
 	}
 
 	return result, nil
@@ -343,7 +334,6 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
-	hasFail := false
 
 	for _, entry := range env.HBAEntries {
 		if entry.Type != "host" {
@@ -359,13 +349,10 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		hasFail = true
 		result.Critical(fmt.Sprintf("Line %d: plain 'host' connection without SSL/GSSENC (db=%s, user=%s, addr=%s, method=%s)", entry.LineNumber, entry.Database, entry.User, addr, entry.Method))
 	}
 
-	if hasFail {
-		result.Status = checker.StatusFail
-	} else {
+	if result.Status != checker.StatusFail {
 		result.Pass("All non-local host connections use SSL or GSSENC")
 	}
 	return result, nil
@@ -444,7 +431,6 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	result := checker.NewResult(checker.SeverityWarning)
-	hasWarning := false
 
 	for _, entry := range env.HBAEntries {
 		if entry.Method == "reject" {
@@ -452,18 +438,14 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 		}
 
 		if entry.Database == "all" {
-			hasWarning = true
-			result.Warn(fmt.Sprintf("Line %d: database='all' is overly broad (user=%s, type=%s, method=%s)", entry.LineNumber, entry.User, entry.Type, entry.Method))
+			result.FailWarn(fmt.Sprintf("Line %d: database='all' is overly broad (user=%s, type=%s, method=%s)", entry.LineNumber, entry.User, entry.Type, entry.Method))
 		}
 		if entry.User == "all" {
-			hasWarning = true
-			result.Warn(fmt.Sprintf("Line %d: user='all' is overly broad (db=%s, type=%s, method=%s)", entry.LineNumber, entry.Database, entry.Type, entry.Method))
+			result.FailWarn(fmt.Sprintf("Line %d: user='all' is overly broad (db=%s, type=%s, method=%s)", entry.LineNumber, entry.Database, entry.Type, entry.Method))
 		}
 	}
 
-	if hasWarning {
-		result.Status = checker.StatusFail
-	} else {
+	if result.Status != checker.StatusFail {
 		result.Pass("All HBA entries specify explicit databases and users")
 	}
 	return result, nil
@@ -499,7 +481,6 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
-	hasFail := false
 
 	for _, entry := range env.HBAEntries {
 		if !strings.HasPrefix(entry.Type, "host") {
@@ -511,17 +492,13 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 
 		user := entry.User
 		if user == "all" {
-			hasFail = true
 			result.Critical(fmt.Sprintf("Line %d: user='all' allows superuser remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, entry.Type, entry.Address, entry.Method))
 		} else if superSet[user] {
-			hasFail = true
 			result.Critical(fmt.Sprintf("Line %d: superuser '%s' has remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, user, entry.Type, entry.Address, entry.Method))
 		}
 	}
 
-	if hasFail {
-		result.Status = checker.StatusFail
-	} else {
+	if result.Status != checker.StatusFail {
 		result.Pass("Superuser connections are restricted to local access only")
 	}
 	return result, nil

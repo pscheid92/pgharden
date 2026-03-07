@@ -184,30 +184,21 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
-	failed := false
 
 	if sslOn != "on" {
-		failed = true
 		result.Critical(fmt.Sprintf("ssl is '%s' (should be 'on').", sslOn))
 	} else {
 		result.Info("ssl is enabled.")
 	}
 
 	if sslMinVersion != "TLSv1.2" && sslMinVersion != "TLSv1.3" {
-		failed = true
-		result.Warn(fmt.Sprintf("ssl_min_protocol_version is '%s' (should be 'TLSv1.2' or 'TLSv1.3').", sslMinVersion))
+		result.FailWarn(fmt.Sprintf("ssl_min_protocol_version is '%s' (should be 'TLSv1.2' or 'TLSv1.3').", sslMinVersion))
 	} else {
 		result.Info(fmt.Sprintf("ssl_min_protocol_version is '%s'.", sslMinVersion))
 	}
 
 	if sslPassCmd != "" {
 		result.Info(fmt.Sprintf("ssl_passphrase_command is configured: '%s'.", sslPassCmd))
-	}
-
-	if failed {
-		result.Status = checker.StatusFail
-	} else {
-		result.Status = checker.StatusPass
 	}
 
 	return result, nil
