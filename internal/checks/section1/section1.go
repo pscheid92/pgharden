@@ -489,7 +489,7 @@ type check_1_4_5 struct{}
 func (c *check_1_4_5) ID() string { return "1.4.5" }
 
 func (c *check_1_4_5) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_1_4_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
