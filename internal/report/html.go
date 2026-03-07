@@ -9,7 +9,6 @@ import (
 //go:embed templates/report.html.tmpl
 var templateFS embed.FS
 
-// WriteHTML renders the report as self-contained HTML.
 func WriteHTML(w io.Writer, r *Report) error {
 	funcMap := template.FuncMap{
 		"statusClass": func(status string) string {

@@ -16,7 +16,6 @@ import (
 	"github.com/pgharden/pgharden/internal/report"
 )
 
-// runToWriter runs the full scan and writes the report to w. Used by tests.
 func runToWriter(ctx context.Context, cfg *config.Config, opts *RunOptions, w io.Writer) (int, error) {
 	conn, env, err := connect(ctx, cfg)
 	if err != nil {

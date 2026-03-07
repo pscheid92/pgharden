@@ -18,9 +18,7 @@ func writeReport(cfg *config.Config, opts *RunOptions, rpt *report.Report) error
 	if err != nil {
 		return err
 	}
-	if closer != nil {
-		defer closer()
-	}
+	defer closer()
 
 	useColor := cfg.Format == "text" && !opts.NoColor && os.Getenv("NO_COLOR") == "" && cfg.Output == "" && isTerminal(os.Stdout)
 	return writeReportTo(out, cfg.Format, rpt, useColor)
@@ -51,14 +49,19 @@ func resolveFormat(cfg *config.Config, opts *RunOptions) {
 }
 
 func openOutput(path string) (*os.File, func(), error) {
+	closer := func() { /* EMPTY */ }
+
 	if path == "" {
-		return os.Stdout, nil, nil
+		return os.Stdout, closer, nil
 	}
+
 	f, err := os.Create(path)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating output file: %w", err)
+		return nil, closer, fmt.Errorf("creating output file: %w", err)
 	}
-	return f, func() { _ = f.Close() }, nil
+
+	closer = func() { _ = f.Close() }
+	return f, closer, nil
 }
 
 func isTerminal(f *os.File) bool {

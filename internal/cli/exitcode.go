@@ -2,7 +2,6 @@ package cli
 
 import "github.com/pgharden/pgharden/internal/report"
 
-// Exit codes returned by the CLI.
 const (
 	ExitOK               = 0 // All checks passed.
 	ExitCriticalFindings = 1 // One or more critical findings.

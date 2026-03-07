@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// ANSI color codes.
 const (
 	colorReset  = "\033[0m"
 	colorRed    = "\033[31m"
@@ -16,7 +15,6 @@ const (
 	colorBold   = "\033[1m"
 )
 
-// WriteText renders the report as human-readable plain text.
 func WriteText(w io.Writer, r *Report, color bool) error {
 	c := &textColors{}
 	if color {
@@ -78,7 +76,6 @@ func WriteText(w io.Writer, r *Report, color bool) error {
 	return tw.err
 }
 
-// textWriter wraps an io.Writer and captures the first error.
 type textWriter struct {
 	w   io.Writer
 	err error

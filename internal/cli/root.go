@@ -10,13 +10,11 @@ import (
 	"github.com/pgharden/pgharden/internal/config"
 )
 
-// RunOptions holds CLI-only flags that don't belong in config.
 type RunOptions struct {
 	NoColor        bool
 	FormatExplicit bool
 }
 
-// Execute sets up and runs the CLI, returning the desired process exit code.
 func Execute() (int, error) {
 	cfg := config.DefaultConfig()
 	opts := &RunOptions{}
@@ -60,7 +58,7 @@ func registerFlags(cmd *cobra.Command, cfg *config.Config, opts *RunOptions, con
 	f.StringVarP(&cfg.Format, "format", "f", cfg.Format, "Output format: text, json, html")
 	f.StringVarP(&cfg.Output, "output", "o", cfg.Output, "Output file (default: stdout)")
 	f.BoolVar(&opts.NoColor, "no-color", false, "Disable colored output")
-f.StringVar(&cfg.Title, "title", "", "Report title")
+	f.StringVar(&cfg.Title, "title", "", "Report title")
 
 	// Filtering
 	f.StringSliceVar(&cfg.IncludeChecks, "include", nil, "Only run these check IDs")
