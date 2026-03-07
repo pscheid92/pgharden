@@ -70,7 +70,7 @@ func (c *check_5_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	out, err := exec.CommandContext(ctx, "ps", "-ef").CombinedOutput()
 	if err != nil {
@@ -118,7 +118,7 @@ func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query listen_addresses: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	if listenAddr == "*" || listenAddr == "0.0.0.0" {
 		result.Fail("CRITICAL", fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
@@ -150,7 +150,7 @@ func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		}, nil
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 	hasFail := false
 	hasWarn := false
 
@@ -206,7 +206,7 @@ func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker
 		}, nil
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 	hasFail := false
 	hasWarn := false
 
@@ -261,7 +261,7 @@ func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	defer rows.Close()
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	details := [][]string{{"Role", "Connection Limit"}}
 	count := 0
@@ -307,7 +307,7 @@ func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	libsLower := strings.ToLower(libs)
 	hasCredcheck := strings.Contains(libsLower, "credcheck")
@@ -351,7 +351,7 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	// Parse timeout value — SHOW returns values like "1min", "30s", or "60".
 	timeoutSec, parseErr := parsePGInterval(authTimeout)
@@ -412,7 +412,7 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 		}, nil
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 	hasFail := false
 
 	for _, entry := range env.HBAEntries {
@@ -468,7 +468,7 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 		}, nil
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 	hasCritical := false
 	hasWarning := false
 
@@ -545,7 +545,7 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 		}, nil
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 	hasWarning := false
 
 	for _, entry := range env.HBAEntries {
@@ -617,7 +617,7 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		superSet[su] = true
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 	hasFail := false
 
 	for _, entry := range env.HBAEntries {
@@ -674,7 +674,7 @@ func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checke
 		return nil, fmt.Errorf("query password_encryption: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	if passEnc == "scram-sha-256" {
 		result.Pass("password_encryption is set to 'scram-sha-256'.")

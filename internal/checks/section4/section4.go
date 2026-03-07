@@ -35,7 +35,7 @@ func (c *check_4_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	f, err := os.Open("/etc/passwd")
 	if err != nil {
@@ -105,7 +105,7 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("iterate superusers: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	if len(superusers) <= 1 {
 		result.Pass("Only the expected superuser account exists.")
@@ -195,7 +195,7 @@ func (c *check_4_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	defer rows.Close()
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	details := [][]string{{"Schema", "Function", "Owner", "Security Definer", "Config"}}
 	count := 0
@@ -254,7 +254,7 @@ func (c *check_4_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	defer rows.Close()
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	details := [][]string{{"Grantee", "Schema", "Table", "Privilege"}}
 	count := 0
@@ -422,7 +422,7 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 		return nil, fmt.Errorf("query public schema ACL: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	if nspacl == nil {
 		// NULL means default privileges (which includes CREATE for PUBLIC)

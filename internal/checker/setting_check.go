@@ -35,7 +35,7 @@ func (c *SettingCheck) Run(ctx context.Context, env *Environment) (*CheckResult,
 		return nil, err
 	}
 
-	result := &CheckResult{Severity: c.Sev}
+	result := NewResult(c.Sev)
 
 	if c.compare(val) {
 		msg := c.SuccessMsg

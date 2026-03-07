@@ -65,6 +65,10 @@ type CheckRequirements struct {
 	PGMonitor    bool     // Requires pg_monitor membership or equivalent.
 }
 
+func NewResult(sev Severity) *CheckResult {
+	return &CheckResult{Severity: sev}
+}
+
 type CheckResult struct {
 	Status     Status
 	Severity   Severity

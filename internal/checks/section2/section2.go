@@ -41,7 +41,7 @@ func (c *check_2_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	out, err := exec.CommandContext(ctx, "sh", "-c", "umask").CombinedOutput()
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *check_2_2) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	var dynPath string
 	if err := env.DB.QueryRow(ctx, "SHOW dynamic_library_path").Scan(&dynPath); err != nil {
@@ -138,7 +138,7 @@ func (c *check_2_3) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	// Check common home directories for .psql_history
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
@@ -206,7 +206,7 @@ func (c *check_2_4) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
 	var problems []string
@@ -266,7 +266,7 @@ func (c *check_2_5) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	var hbaFile string
 	if err := env.DB.QueryRow(ctx, "SHOW hba_file").Scan(&hbaFile); err != nil {
@@ -302,7 +302,7 @@ func (c *check_2_6) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	var sockDirs string
 	if err := env.DB.QueryRow(ctx, "SHOW unix_socket_directories").Scan(&sockDirs); err != nil {
@@ -352,7 +352,7 @@ func (c *check_2_7) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	info, err := os.Stat(env.DataDir)
 	if err != nil {

@@ -27,7 +27,7 @@ func (c *check_8_2) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_8_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	out, err := exec.CommandContext(ctx, "pgbackrest", "info").CombinedOutput()
 	output := strings.TrimSpace(string(out))

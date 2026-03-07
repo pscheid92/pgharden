@@ -65,7 +65,7 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	hasPgAudit := false
 	for lib := range strings.SplitSeq(val, ",") {
@@ -120,7 +120,7 @@ func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*chec
 		}
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 	if len(missing) > 0 {
 		result.Fail("FAILURE", "log_line_prefix is missing: "+strings.Join(missing, ", ")+" (current: '"+val+"')")
 	} else {

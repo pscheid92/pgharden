@@ -49,7 +49,7 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	if len(replUsers) == 0 {
 		result.Fail("FAILURE", "No dedicated replication user found (no roles with REPLICATION privilege)")
@@ -139,7 +139,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	if val == "" {
 		result.Status = checker.StatusPass

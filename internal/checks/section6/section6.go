@@ -62,7 +62,7 @@ func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		"post_auth_delay":       "0",
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 	details := [][]string{{"Parameter", "Current Value", "Expected Value", "Status"}}
 	failed := false
 
@@ -280,7 +280,7 @@ func (c *check_6_7) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	out, err := exec.CommandContext(ctx, "fips-mode-setup", "--check").CombinedOutput()
 	output := strings.TrimSpace(string(out))
@@ -325,7 +325,7 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query ssl_passphrase_command: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 	failed := false
 
 	if sslOn != "on" {
@@ -457,7 +457,7 @@ func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checke
 		return nil, fmt.Errorf("query ssl_ciphers: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	var disallowed []string
 	for cipher := range strings.SplitSeq(ciphers, ":") {
@@ -500,7 +500,7 @@ func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		return nil, fmt.Errorf("query session_preload_libraries: %w", err)
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityInfo}
+	result := checker.NewResult(checker.SeverityInfo)
 
 	libsLower := strings.ToLower(libs)
 	hasAnon := strings.Contains(libsLower, "anon")

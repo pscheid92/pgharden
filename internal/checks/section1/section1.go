@@ -60,7 +60,7 @@ func (c *check_1_2) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	out, err := exec.CommandContext(ctx, "systemctl", "is-enabled", "postgresql").CombinedOutput()
 	output := strings.TrimSpace(string(out))
@@ -94,7 +94,7 @@ func (c *check_1_3) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	if _, err := os.Stat(pgVersionFile); err != nil {
@@ -135,7 +135,7 @@ func (c *check_1_6) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	profileFiles := []string{
 		"/etc/profile",
@@ -182,7 +182,7 @@ func (c *check_1_7) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityCritical}
+	result := checker.NewResult(checker.SeverityCritical)
 
 	if env.OS != "linux" {
 		result.Status = checker.StatusSkipped
@@ -320,7 +320,7 @@ func (c *check_1_1_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	// Try RPM-based check
 	if env.Commands["rpm"] {
@@ -370,7 +370,7 @@ func (c *check_1_4_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
@@ -400,7 +400,7 @@ func (c *check_1_4_2) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
@@ -454,7 +454,7 @@ func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*check
 		return nil, err
 	}
 
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 	if val == "on" {
 		result.Pass("Data checksums are enabled")
 	} else {
@@ -473,7 +473,7 @@ func (c *check_1_4_4) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	result := &checker.CheckResult{Severity: checker.SeverityWarning}
+	result := checker.NewResult(checker.SeverityWarning)
 
 	// Check if pg_wal is a symlink (separate storage)
 	pgWal := filepath.Join(env.DataDir, "pg_wal")
