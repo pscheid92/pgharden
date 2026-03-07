@@ -2,13 +2,24 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"slices"
 
 	"github.com/spf13/cobra"
 
-	"github.com/pgharden/pgharden/internal/config"
+	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pgharden/pgharden/internal/platform/config"
 )
+
+var validPlatforms = []string{
+	domain.PlatformBareMetal,
+	domain.PlatformContainer,
+	domain.PlatformZalando,
+	domain.PlatformRDS,
+	domain.PlatformAurora,
+}
 
 type RunOptions struct {
 	NoColor        bool
@@ -29,7 +40,7 @@ func Execute() (int, error) {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.FormatExplicit = cmd.Flags().Changed("format")
 			var err error
-			exitCode, err = run(cmd.Context(), cfg, opts)
+			exitCode, err = run(cmd.Context(), new(dbConnector), new(envDetector), cfg, &cliReportWriter{cfg: cfg, opts: opts})
 			return err
 		},
 		SilenceUsage: true,
@@ -77,7 +88,12 @@ func registerFlags(cmd *cobra.Command, cfg *config.Config, opts *RunOptions, con
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if *configFile != "" {
-			return cfg.LoadFile(*configFile)
+			if err := cfg.LoadFile(*configFile); err != nil {
+				return err
+			}
+		}
+		if cfg.Platform != "" && !slices.Contains(validPlatforms, cfg.Platform) {
+			return fmt.Errorf("invalid platform %q: must be one of %v", cfg.Platform, validPlatforms)
 		}
 		return nil
 	}

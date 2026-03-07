@@ -19,7 +19,8 @@ coverage.html
 Thumbs.db
 
 # Reports (generated)
+report.json
 *.html
-!internal/report/templates/*.tmpl
+!internal/adapter/output/templates/*.tmpl
 *.exe
 *.out

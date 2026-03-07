@@ -152,6 +152,8 @@ Flags:
       --section string       Only run checks in this section
   -a, --allow strings        Only check these databases
   -e, --exclude-db strings   Exclude these databases
+      --platform string      Override platform detection (bare-metal, container, zalando, rds, aurora)
+      --local                Enable filesystem and OS command checks (use only on the PostgreSQL host)
 ```
 
 ### Format auto-detection

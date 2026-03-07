@@ -13,8 +13,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/pgharden/pgharden/internal/config"
-	"github.com/pgharden/pgharden/internal/report"
+	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pgharden/pgharden/internal/app/report"
 )
 
 func startPostgres(t *testing.T, ctx context.Context) (host string, port int) {
@@ -70,11 +70,9 @@ func TestIntegrationFullScan(t *testing.T) {
 	cfg.Format = "json"
 	cfg.Output = ""
 
-	opts := &RunOptions{FormatExplicit: true}
-
 	// Run the full scan, capturing JSON output.
 	var buf bytes.Buffer
-	exitCode, err := runToWriter(ctx, cfg, opts, &buf)
+	exitCode, err := run(ctx, new(dbConnector), new(envDetector), cfg, newBufferWriter(&buf, "json"))
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
@@ -126,10 +124,8 @@ func TestIntegrationCheckCorrectness(t *testing.T) {
 	cfg.DSN = fmt.Sprintf("host=%s port=%d user=postgres password=testpass dbname=postgres sslmode=disable", host, port)
 	cfg.Format = "json"
 
-	opts := &RunOptions{FormatExplicit: true}
-
 	var buf bytes.Buffer
-	_, err := runToWriter(ctx, cfg, opts, &buf)
+	_, err := run(ctx, new(dbConnector), new(envDetector), cfg, newBufferWriter(&buf, "json"))
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
@@ -231,10 +227,9 @@ func TestIntegrationAlteredConfig(t *testing.T) {
 	cfg := config.DefaultConfig()
 	cfg.DSN = dsn
 	cfg.Format = "json"
-	opts := &RunOptions{FormatExplicit: true}
 
 	var buf bytes.Buffer
-	_, err = runToWriter(ctx, cfg, opts, &buf)
+	_, err = run(ctx, new(dbConnector), new(envDetector), cfg, newBufferWriter(&buf, "json"))
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}
@@ -289,10 +284,8 @@ func TestIntegrationSectionFilter(t *testing.T) {
 	cfg.Format = "json"
 	cfg.IncludeSection = "3"
 
-	opts := &RunOptions{FormatExplicit: true}
-
 	var buf bytes.Buffer
-	_, err := runToWriter(ctx, cfg, opts, &buf)
+	_, err := run(ctx, new(dbConnector), new(envDetector), cfg, newBufferWriter(&buf, "json"))
 	if err != nil {
 		t.Fatalf("scan failed: %v", err)
 	}

@@ -7,9 +7,19 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/pgharden/pgharden/internal/config"
-	"github.com/pgharden/pgharden/internal/report"
+	"github.com/pgharden/pgharden/internal/adapter/output"
+	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pgharden/pgharden/internal/platform/config"
 )
+
+type cliReportWriter struct {
+	cfg  *config.Config
+	opts *RunOptions
+}
+
+func (w *cliReportWriter) WriteReport(rpt *report.Report) error {
+	return writeReport(w.cfg, w.opts, rpt)
+}
 
 func writeReport(cfg *config.Config, opts *RunOptions, rpt *report.Report) error {
 	resolveFormat(cfg, opts)
@@ -27,11 +37,11 @@ func writeReport(cfg *config.Config, opts *RunOptions, rpt *report.Report) error
 func writeReportTo(w io.Writer, format string, rpt *report.Report, color bool) error {
 	switch format {
 	case "text":
-		return report.WriteText(w, rpt, color)
+		return output.WriteText(w, rpt, color)
 	case "json":
-		return report.WriteJSON(w, rpt)
+		return output.WriteJSON(w, rpt)
 	case "html":
-		return report.WriteHTML(w, rpt)
+		return output.WriteHTML(w, rpt)
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}
@@ -64,6 +74,6 @@ func openOutput(path string) (*os.File, func(), error) {
 	return f, closer, nil
 }
 
-func isTerminal(f *os.File) bool {
+var isTerminal = func(f *os.File) bool {
 	return term.IsTerminal(int(f.Fd()))
 }

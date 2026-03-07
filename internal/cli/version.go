@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/pgharden/pgharden/internal/buildinfo"
+	"github.com/pgharden/pgharden/internal/platform/buildinfo"
 )
 
 func versionCmd() *cobra.Command {

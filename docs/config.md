@@ -62,6 +62,24 @@ Before running any checks, pgharden probes the runtime environment to determine 
 
 Checks that can't run are marked **SKIPPED** with a reason — never a hard failure.
 
+### Platform Override
+
+Use `--platform` to override auto-detection when pgharden misidentifies your environment:
+
+```bash
+pgharden --platform rds --dsn "..."
+```
+
+Valid values: `bare-metal`, `container`, `zalando`, `rds`, `aurora`.
+
+### Local Mode
+
+By default, filesystem and OS command checks are skipped when connecting to a remote database. Use `--local` when running pgharden directly on the PostgreSQL host to enable these checks:
+
+```bash
+pgharden --local -H localhost -U postgres -d postgres
+```
+
 ## Connection
 
 pgharden connects via [pgx](https://github.com/jackc/pgx) using a single persistent connection. You can specify connection parameters in three ways:
@@ -158,16 +176,22 @@ Self-contained single-file HTML with embedded CSS and SVG icons. No CDN dependen
 ## Project Structure
 
 ```
-cmd/pgharden/main.go          CLI entry point (cobra)
+cmd/pgharden/main.go              CLI entry point
 internal/
-  buildinfo/                   Version/commit/date via ldflags
-  checker/                     Check interface, SettingCheck, runner
-  checks/section{1-8}/        85 check implementations (one file per section)
-  cli/                         Cobra setup, scan pipeline, output, exit codes
-  config/                      YAML config + CLI flag binding
-  connection/                  pgx connection + privilege detection
-  environment/                 Runtime capability detection
-  hba/                         pg_hba.conf parsing (SQL view + file fallback)
-  labels/                      Check titles and descriptions
-  report/                      Text, JSON, and HTML report renderers
+  domain/                          Check, Environment, DBQuerier, types
+  platform/
+    config/                        YAML config + CLI flag binding
+    buildinfo/                     Version/commit/date via ldflags
+    labels/                        Check titles and descriptions
+  app/
+    scanner/                       Scan pipeline: checks → runner → report
+    runner/                        Check executor, requirement enforcement
+    checks/                        Registry + section1-8 implementations
+    report/                        Report types + builder
+    hba/                           pg_hba.conf parsing (SQL + file)
+  adapter/
+    postgres/                      pgx connection, privilege detection
+    environment/                   Runtime capability detection
+    output/                        Text, JSON, HTML report renderers
+  cli/                             Cobra setup, wiring, interfaces
 ```
