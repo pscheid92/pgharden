@@ -4,9 +4,10 @@ import (
 	"context"
 	"slices"
 	"strings"
+
+	"github.com/jackc/pgx/v5"
 )
 
-// Severity represents the severity level of a check finding.
 type Severity int
 
 const (
@@ -28,7 +29,6 @@ func (s Severity) String() string {
 	}
 }
 
-// Status represents the outcome of running a check.
 type Status int
 
 const (
@@ -53,48 +53,34 @@ func (s Status) String() string {
 	}
 }
 
-// CheckRequirements declares what a check needs to run.
 type CheckRequirements struct {
-	// SQL-only check — no filesystem or command access needed.
-	SQLOnly bool
-	// Requires filesystem access to PGDATA.
-	Filesystem bool
-	// System commands required (e.g., "systemctl", "lsblk").
-	Commands []string
-	// Minimum PostgreSQL version (major, e.g., 13).
-	MinPGVersion int
-	// Requires superuser or equivalent privileges.
-	Superuser bool
-	// Requires pg_monitor membership or equivalent.
-	PGMonitor bool
+	SQLOnly      bool     // SQL-only check; no filesystem or command access needed.
+	Filesystem   bool     // Requires filesystem access to PGDATA.
+	Commands     []string // System commands required (e.g., "systemctl", "lsblk").
+	MinPGVersion int      // Minimum PostgreSQL version (major, e.g., 13).
+	Superuser    bool     // Requires superuser or equivalent privileges.
+	PGMonitor    bool     // Requires pg_monitor membership or equivalent.
 }
 
-// CheckResult holds the output of a single check execution.
 type CheckResult struct {
 	Status     Status
 	Severity   Severity
 	Messages   []Message
-	Details    [][]string // Tabular data: first row is headers.
+	Details    [][]string // Tabular data: the first row contains headers
 	SkipReason string
 }
 
-// Message is a single finding within a check.
 type Message struct {
 	Level   string // SUCCESS, FAILURE, WARNING, CRITICAL, INFO
 	Content string
 }
 
-// Check is the interface every security check must implement.
 type Check interface {
-	// ID returns the check identifier (e.g., "1.4.3").
 	ID() string
-	// Requirements declares what the check needs to run.
 	Requirements() CheckRequirements
-	// Run executes the check against the given environment.
 	Run(ctx context.Context, env *Environment) (*CheckResult, error)
 }
 
-// Environment bundles all runtime context a check might need.
 type Environment struct {
 	DB            DBQuerier
 	PGVersion     int    // Major version (e.g., 15)
@@ -108,9 +94,9 @@ type Environment struct {
 
 	// Capabilities
 	HasFilesystem bool
-	Commands      map[string]bool // command name → available
+	Commands      map[string]bool
 	IsContainer   bool
-	OS            string // runtime.GOOS
+	OS            string
 
 	// Databases to check
 	Databases        []string
@@ -122,29 +108,15 @@ type Environment struct {
 	HBALoaded  bool
 
 	// Cached data
-	Superusers []string // rolnames with rolsuper=true
+	Superusers []string
 }
 
-// DBQuerier abstracts database access for testing.
+// DBQuerier abstracts database access. Satisfied by *pgx.Conn and pgxmock.
 type DBQuerier interface {
-	QueryRow(ctx context.Context, sql string, args ...any) Row
-	Query(ctx context.Context, sql string, args ...any) (Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
-// Row abstracts pgx.Row.
-type Row interface {
-	Scan(dest ...any) error
-}
-
-// Rows abstracts pgx.Rows.
-type Rows interface {
-	Next() bool
-	Scan(dest ...any) error
-	Close()
-	Err() error
-}
-
-// HBAEntry represents a parsed pg_hba.conf line.
 type HBAEntry struct {
 	LineNumber int
 	Type       string // local, host, hostssl, hostnossl, hostgssenc, hostnogssenc
@@ -177,14 +149,12 @@ func SkippedPermission(setting string) *CheckResult {
 	}
 }
 
-// ErrPermissionDenied is returned when a query fails due to insufficient privileges.
 var ErrPermissionDenied = errPermission{}
 
 type errPermission struct{}
 
 func (errPermission) Error() string { return "permission denied" }
 
-// ShouldCheckDB returns true if the given database should be included.
 func (e *Environment) ShouldCheckDB(db string) bool {
 	if len(e.AllowDatabases) > 0 {
 		return slices.Contains(e.AllowDatabases, db)

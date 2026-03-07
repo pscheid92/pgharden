@@ -5,15 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 func TestSettingCheckEq(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW ssl"] = "on"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("on"),
+	)
 
 	c := &SettingCheck{CheckID: "t.1", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,12 +26,13 @@ func TestSettingCheckEq(t *testing.T) {
 }
 
 func TestSettingCheckEqFail(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW ssl"] = "off"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("off"),
+	)
 
 	c := &SettingCheck{CheckID: "t.1", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,12 +42,13 @@ func TestSettingCheckEqFail(t *testing.T) {
 }
 
 func TestSettingCheckNeq(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW log_destination"] = "stderr"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW log_destination").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("stderr"),
+	)
 
 	c := &SettingCheck{CheckID: "t.2", Setting: "log_destination", Expected: "", Comparator: "neq", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,12 +58,13 @@ func TestSettingCheckNeq(t *testing.T) {
 }
 
 func TestSettingCheckNeqFail(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW log_destination"] = ""
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW log_destination").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow(""),
+	)
 
 	c := &SettingCheck{CheckID: "t.2", Setting: "log_destination", Expected: "", Comparator: "neq", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,12 +74,13 @@ func TestSettingCheckNeqFail(t *testing.T) {
 }
 
 func TestSettingCheckContains(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW shared_preload_libraries"] = "pg_stat_statements,pgaudit"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW shared_preload_libraries").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("pg_stat_statements,pgaudit"),
+	)
 
 	c := &SettingCheck{CheckID: "t.3", Setting: "shared_preload_libraries", Expected: "pgaudit", Comparator: "contains", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,12 +90,13 @@ func TestSettingCheckContains(t *testing.T) {
 }
 
 func TestSettingCheckOneof(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW log_statement"] = "ddl"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW log_statement").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("ddl"),
+	)
 
 	c := &SettingCheck{CheckID: "t.4", Setting: "log_statement", Expected: "ddl,all", Comparator: "oneof", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,12 +106,13 @@ func TestSettingCheckOneof(t *testing.T) {
 }
 
 func TestSettingCheckOneofFail(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW log_statement"] = "none"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW log_statement").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("none"),
+	)
 
 	c := &SettingCheck{CheckID: "t.4", Setting: "log_statement", Expected: "ddl,all", Comparator: "oneof", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,12 +122,11 @@ func TestSettingCheckOneofFail(t *testing.T) {
 }
 
 func TestSettingCheckPermissionDenied(t *testing.T) {
-	db := newMockDB()
-	db.errors["SHOW ssl"] = fmt.Errorf("permission denied for parameter")
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("permission denied for parameter"))
 
 	c := &SettingCheck{CheckID: "t.5", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,12 +136,11 @@ func TestSettingCheckPermissionDenied(t *testing.T) {
 }
 
 func TestSettingCheckQueryError(t *testing.T) {
-	db := newMockDB()
-	db.errors["SHOW ssl"] = fmt.Errorf("connection lost")
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("connection lost"))
 
 	c := &SettingCheck{CheckID: "t.6", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
-	_, err := c.Run(context.Background(), env)
+	_, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err == nil {
 		t.Fatal("expected error for connection lost")
 	}
@@ -143,16 +150,17 @@ func TestSettingCheckQueryError(t *testing.T) {
 }
 
 func TestSettingCheckCustomMessages(t *testing.T) {
-	db := newMockDB()
-	db.scalars["SHOW ssl"] = "on"
-	env := &Environment{DB: db}
+	mock := newMockDB(t)
+	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+		pgxmock.NewRows([]string{"setting"}).AddRow("on"),
+	)
 
 	c := &SettingCheck{
 		CheckID: "t.7", Setting: "ssl", Expected: "on", Sev: SeverityWarning,
 		SuccessMsg: "SSL is good!",
 		FailureMsg: "SSL is bad!",
 	}
-	result, err := c.Run(context.Background(), env)
+	result, err := c.Run(context.Background(), &Environment{DB: mock})
 	if err != nil {
 		t.Fatal(err)
 	}

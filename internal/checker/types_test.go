@@ -5,15 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/pashagolub/pgxmock/v4"
 )
 
 func TestShowSetting(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("success", func(t *testing.T) {
-		db := newMockDB()
-		db.scalars["SHOW ssl"] = "on"
-		val, err := ShowSetting(ctx, db, "ssl")
+		mock := newMockDB(t)
+		mock.ExpectQuery("SHOW ssl").WillReturnRows(
+			pgxmock.NewRows([]string{"setting"}).AddRow("on"),
+		)
+		val, err := ShowSetting(ctx, mock, "ssl")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -23,18 +27,18 @@ func TestShowSetting(t *testing.T) {
 	})
 
 	t.Run("permission_denied", func(t *testing.T) {
-		db := newMockDB()
-		db.errors["SHOW ssl"] = fmt.Errorf("permission denied for parameter")
-		_, err := ShowSetting(ctx, db, "ssl")
+		mock := newMockDB(t)
+		mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("permission denied for parameter"))
+		_, err := ShowSetting(ctx, mock, "ssl")
 		if !errors.Is(err, ErrPermissionDenied) {
 			t.Errorf("got %v, want ErrPermissionDenied", err)
 		}
 	})
 
 	t.Run("other_error", func(t *testing.T) {
-		db := newMockDB()
-		db.errors["SHOW ssl"] = fmt.Errorf("connection lost")
-		_, err := ShowSetting(ctx, db, "ssl")
+		mock := newMockDB(t)
+		mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("connection lost"))
+		_, err := ShowSetting(ctx, mock, "ssl")
 		if err == nil || errors.Is(err, ErrPermissionDenied) {
 			t.Errorf("expected non-permission error, got %v", err)
 		}

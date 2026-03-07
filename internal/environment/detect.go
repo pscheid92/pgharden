@@ -21,7 +21,7 @@ var (
 // Detect probes the runtime environment and builds a checker.Environment.
 func Detect(ctx context.Context, conn *connection.Conn) (*checker.Environment, error) {
 	env := &checker.Environment{
-		DB:       conn.DB,
+		DB:       conn.DB(),
 		Commands: make(map[string]bool),
 		OS:       runtime.GOOS,
 	}
