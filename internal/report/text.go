@@ -30,11 +30,13 @@ func WriteText(w io.Writer, r *Report, color bool) error {
 		}
 	}
 
+	tw := &textWriter{w: w}
+
 	for _, cat := range r.Categories {
 		if color {
-			fmt.Fprintf(w, "\n%s=== %s: %s ===%s\n", c.bold, cat.ID, cat.Title, c.reset)
+			tw.printf("\n%s=== %s: %s ===%s\n", c.bold, cat.ID, cat.Title, c.reset)
 		} else {
-			fmt.Fprintf(w, "\n=== %s: %s ===\n", cat.ID, cat.Title)
+			tw.printf("\n=== %s: %s ===\n", cat.ID, cat.Title)
 		}
 
 		for _, check := range cat.Checks {
@@ -44,22 +46,21 @@ func WriteText(w io.Writer, r *Report, color bool) error {
 				title = check.ID
 			}
 
-			fmt.Fprintf(w, "  %s%-8s%s %s  %s\n", prefixColor, prefix, c.reset, check.ID, title)
+			tw.printf("  %s%-8s%s %s  %s\n", prefixColor, prefix, c.reset, check.ID, title)
 
 			for _, msg := range check.Messages {
 				msgColor := messageLevelColor(msg.Level, c)
-				fmt.Fprintf(w, "           %s%s%s\n", msgColor, msg.Content, c.reset)
+				tw.printf("           %s%s%s\n", msgColor, msg.Content, c.reset)
 			}
 
 			if check.SkipReason != "" {
-				fmt.Fprintf(w, "           %s%s%s\n", c.gray, check.SkipReason, c.reset)
+				tw.printf("           %s%s%s\n", c.gray, check.SkipReason, c.reset)
 			}
 		}
 	}
 
-	// Summary
-	fmt.Fprintf(w, "\n%s--- Summary ---%s\n", c.bold, c.reset)
-	fmt.Fprintf(w, "%s%d passed%s, %s%d failed%s, %s%d skipped%s, %d manual (%d total)\n",
+	tw.printf("\n%s--- Summary ---%s\n", c.bold, c.reset)
+	tw.printf("%s%d passed%s, %s%d failed%s, %s%d skipped%s, %d manual (%d total)\n",
 		c.green, r.Summary.Passed, c.reset,
 		failColor(r.Summary.Failed, c), r.Summary.Failed, c.reset,
 		c.gray, r.Summary.Skipped, c.reset,
@@ -71,10 +72,23 @@ func WriteText(w io.Writer, r *Report, color bool) error {
 		for sev, count := range r.Summary.BySeverity {
 			parts = append(parts, fmt.Sprintf("%d %s", count, strings.ToLower(sev)))
 		}
-		fmt.Fprintf(w, "Failures by severity: %s\n", strings.Join(parts, ", "))
+		tw.printf("Failures by severity: %s\n", strings.Join(parts, ", "))
 	}
 
-	return nil
+	return tw.err
+}
+
+// textWriter wraps an io.Writer and captures the first error.
+type textWriter struct {
+	w   io.Writer
+	err error
+}
+
+func (tw *textWriter) printf(format string, args ...any) {
+	if tw.err != nil {
+		return
+	}
+	_, tw.err = fmt.Fprintf(tw.w, format, args...)
 }
 
 type textColors struct {
