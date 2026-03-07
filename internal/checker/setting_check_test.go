@@ -149,4 +149,3 @@ func TestSettingCheckQueryError(t *testing.T) {
 		t.Error("should not be permission denied")
 	}
 }
-

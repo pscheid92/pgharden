@@ -88,7 +88,7 @@ func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(found) > 0 {
-		result.Fail("CRITICAL", "Password(s) found in process listings")
+		result.Critical("Password(s) found in process listings")
 		result.Details = [][]string{{"Process"}}
 		for _, f := range found {
 			result.Details = append(result.Details, []string{f})
@@ -121,7 +121,7 @@ func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := checker.NewResult(checker.SeverityCritical)
 
 	if listenAddr == "*" || listenAddr == "0.0.0.0" {
-		result.Fail("CRITICAL", fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
+		result.Critical(fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
 	} else {
 		result.Pass(fmt.Sprintf("listen_addresses is set to '%s'.", listenAddr))
 	}
@@ -282,7 +282,7 @@ func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Pass("All login roles have connection limits configured.")
 	} else {
 		result.Details = details
-		result.Fail("WARNING", fmt.Sprintf("Found %d login roles with no connection limit set.", count))
+		result.FailWarn(fmt.Sprintf("Found %d login roles with no connection limit set.", count))
 	}
 
 	return result, nil
@@ -320,7 +320,7 @@ func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker
 		}
 		result.Pass(fmt.Sprintf("Password complexity module '%s' is loaded in shared_preload_libraries.", found))
 	} else {
-		result.Fail("WARNING", fmt.Sprintf("No password complexity module found in shared_preload_libraries ('%s'). Install 'credcheck' or 'passwordcheck'.", libs))
+		result.FailWarn(fmt.Sprintf("No password complexity module found in shared_preload_libraries ('%s'). Install 'credcheck' or 'passwordcheck'.", libs))
 	}
 
 	return result, nil
@@ -679,7 +679,7 @@ func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checke
 	if passEnc == "scram-sha-256" {
 		result.Pass("password_encryption is set to 'scram-sha-256'.")
 	} else {
-		result.Fail("CRITICAL", fmt.Sprintf("password_encryption is set to '%s' (should be 'scram-sha-256').", passEnc))
+		result.Critical(fmt.Sprintf("password_encryption is set to '%s' (should be 'scram-sha-256').", passEnc))
 	}
 
 	return result, nil

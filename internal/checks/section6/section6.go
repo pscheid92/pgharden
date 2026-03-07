@@ -82,7 +82,7 @@ func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	result.Details = details
 
 	if failed {
-		result.Fail("WARNING", "One or more backend runtime parameters have insecure values.")
+		result.FailWarn("One or more backend runtime parameters have insecure values.")
 	} else {
 		result.Pass("All checked backend runtime parameters have secure values.")
 	}
@@ -286,14 +286,14 @@ func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	output := strings.TrimSpace(string(out))
 
 	if err != nil {
-		result.Fail("FAILURE", "FIPS mode check failed: "+output)
+		result.Fail("FIPS mode check failed: "+output)
 		return result, nil
 	}
 
 	if strings.Contains(strings.ToLower(output), "enabled") {
 		result.Pass("FIPS mode is enabled: " + output)
 	} else {
-		result.Fail("FAILURE", "FIPS mode is not enabled: "+output)
+		result.Fail("FIPS mode is not enabled: "+output)
 	}
 	return result, nil
 }
@@ -478,7 +478,7 @@ func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checke
 			details = append(details, []string{c})
 		}
 		result.Details = details
-		result.Fail("WARNING", fmt.Sprintf("Found %d disallowed SSL ciphers. Only strong cipher suites should be used.", len(disallowed)))
+		result.FailWarn(fmt.Sprintf("Found %d disallowed SSL ciphers. Only strong cipher suites should be used.", len(disallowed)))
 	}
 
 	return result, nil
@@ -513,7 +513,7 @@ func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		}
 		result.Pass(fmt.Sprintf("Data anonymization extension '%s' is configured in session_preload_libraries.", found))
 	} else {
-		result.Fail("INFO", fmt.Sprintf("No data anonymization extension found in session_preload_libraries ('%s'). Consider installing 'anon' or 'pg_anonymize'.", libs))
+		result.Fail(fmt.Sprintf("No data anonymization extension found in session_preload_libraries ('%s'). Consider installing 'anon' or 'pg_anonymize'.", libs))
 	}
 
 	return result, nil

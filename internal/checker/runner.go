@@ -9,7 +9,7 @@ import (
 
 // Runner orchestrates check execution with filtering and skip logic.
 type Runner struct {
-	Checks         []Check  // The checks to run.
+	Checks         []Check // The checks to run.
 	Env            *Environment
 	IncludeChecks  []string // If non-empty, only run these check IDs.
 	ExcludeChecks  []string // Skip these check IDs.

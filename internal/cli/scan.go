@@ -92,4 +92,3 @@ func runChecks(ctx context.Context, cfg *config.Config, env *checker.Environment
 	}
 	return report.Build(results, env, meta, cfg.Lang)
 }
-

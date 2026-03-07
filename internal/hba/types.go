@@ -10,9 +10,9 @@ type AuthMethodSecurity int
 
 const (
 	AuthSecure    AuthMethodSecurity = iota // scram-sha-256, cert, gss, sspi, pam, ldap, radius
-	AuthWeak                               // md5, ident
-	AuthForbidden                          // trust, password
-	AuthReject                             // reject
+	AuthWeak                                // md5, ident
+	AuthForbidden                           // trust, password
+	AuthReject                              // reject
 	AuthUnknown
 )
 

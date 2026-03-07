@@ -50,8 +50,8 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata,
 		}
 
 		cr := CheckReport{
-			ID:       rr.CheckID,
-			Title:    labels.CheckTitle(lang, rr.CheckID),
+			ID:          rr.CheckID,
+			Title:       labels.CheckTitle(lang, rr.CheckID),
 			Description: labels.CheckDescription(lang, rr.CheckID),
 		}
 

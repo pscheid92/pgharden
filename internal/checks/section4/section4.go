@@ -66,7 +66,7 @@ func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker
 		if noLoginShells[shell] {
 			result.Pass("postgres user has no interactive shell: " + shell)
 		} else {
-			result.Fail("FAILURE", "postgres user has interactive shell: "+shell+" (expected /bin/false or nologin)")
+			result.Fail("postgres user has interactive shell: "+shell+" (expected /bin/false or nologin)")
 		}
 		return result, nil
 	}
@@ -114,7 +114,7 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		for _, su := range superusers {
 			result.Details = append(result.Details, []string{su})
 		}
-		result.Fail("WARNING", fmt.Sprintf("Found %d superuser roles; only 'postgres' should have superuser privileges.", len(superusers)))
+		result.FailWarn(fmt.Sprintf("Found %d superuser roles; only 'postgres' should have superuser privileges.", len(superusers)))
 	}
 
 	return result, nil
@@ -225,7 +225,7 @@ func (c *check_4_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Pass("No SECURITY DEFINER functions found outside system schemas.")
 	} else {
 		result.Details = details
-		result.Fail("WARNING", fmt.Sprintf("Found %d functions with SECURITY DEFINER or custom config outside system schemas.", count))
+		result.FailWarn(fmt.Sprintf("Found %d functions with SECURITY DEFINER or custom config outside system schemas.", count))
 	}
 
 	return result, nil
@@ -426,7 +426,7 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 
 	if nspacl == nil {
 		// NULL means default privileges (which includes CREATE for PUBLIC)
-		result.Fail("WARNING", "Public schema has default privileges (NULL ACL), which grants CREATE to PUBLIC.")
+		result.FailWarn("Public schema has default privileges (NULL ACL), which grants CREATE to PUBLIC.")
 		return result, nil
 	}
 
@@ -448,7 +448,7 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	if hasPublicCreate {
-		result.Fail("WARNING", fmt.Sprintf("Public schema grants CREATE to PUBLIC. ACL: %s", acl))
+		result.FailWarn(fmt.Sprintf("Public schema grants CREATE to PUBLIC. ACL: %s", acl))
 	} else {
 		result.Pass("Public schema does not grant CREATE to PUBLIC.")
 	}

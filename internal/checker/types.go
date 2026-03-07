@@ -82,22 +82,41 @@ type Message struct {
 	Content string
 }
 
+// Message levels.
+const (
+	LevelSuccess  = "SUCCESS"
+	LevelFailure  = "FAILURE"
+	LevelWarning  = "WARNING"
+	LevelCritical = "CRITICAL"
+	LevelInfo     = "INFO"
+)
+
 func (r *CheckResult) Pass(msg string) {
 	r.Status = StatusPass
-	r.Messages = append(r.Messages, Message{Level: "SUCCESS", Content: msg})
+	r.Messages = append(r.Messages, Message{Level: LevelSuccess, Content: msg})
 }
 
-func (r *CheckResult) Fail(level, msg string) {
+func (r *CheckResult) Fail(msg string) {
 	r.Status = StatusFail
-	r.Messages = append(r.Messages, Message{Level: level, Content: msg})
+	r.Messages = append(r.Messages, Message{Level: LevelFailure, Content: msg})
 }
 
-func (r *CheckResult) Info(msg string) {
-	r.Messages = append(r.Messages, Message{Level: "INFO", Content: msg})
+func (r *CheckResult) Critical(msg string) {
+	r.Status = StatusFail
+	r.Messages = append(r.Messages, Message{Level: LevelCritical, Content: msg})
+}
+
+func (r *CheckResult) FailWarn(msg string) {
+	r.Status = StatusFail
+	r.Messages = append(r.Messages, Message{Level: LevelWarning, Content: msg})
 }
 
 func (r *CheckResult) Warn(msg string) {
-	r.Messages = append(r.Messages, Message{Level: "WARNING", Content: msg})
+	r.Messages = append(r.Messages, Message{Level: LevelWarning, Content: msg})
+}
+
+func (r *CheckResult) Info(msg string) {
+	r.Messages = append(r.Messages, Message{Level: LevelInfo, Content: msg})
 }
 
 type Check interface {

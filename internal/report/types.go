@@ -4,9 +4,9 @@ import "time"
 
 // Report is the top-level output structure.
 type Report struct {
-	Metadata   Metadata          `json:"metadata"`
-	Summary    Summary           `json:"summary"`
-	Categories []CategoryReport  `json:"categories"`
+	Metadata   Metadata         `json:"metadata"`
+	Summary    Summary          `json:"summary"`
+	Categories []CategoryReport `json:"categories"`
 }
 
 // Metadata holds information about the assessment run.
@@ -24,11 +24,11 @@ type Metadata struct {
 
 // Summary holds aggregate counts.
 type Summary struct {
-	Total    int            `json:"total"`
-	Passed   int            `json:"passed"`
-	Failed   int            `json:"failed"`
-	Skipped  int            `json:"skipped"`
-	Manual   int            `json:"manual"`
+	Total      int            `json:"total"`
+	Passed     int            `json:"passed"`
+	Failed     int            `json:"failed"`
+	Skipped    int            `json:"skipped"`
+	Manual     int            `json:"manual"`
 	BySeverity map[string]int `json:"by_severity"`
 }
 

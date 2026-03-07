@@ -70,7 +70,7 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		out2, err2 := exec.CommandContext(ctx, "bash", "-c", "systemctl is-enabled postgresql*").CombinedOutput()
 		output2 := strings.TrimSpace(string(out2))
 		if err2 != nil || !strings.Contains(output2, "enabled") {
-			result.Fail("FAILURE", "PostgreSQL systemd service is not enabled: "+output)
+			result.Fail("PostgreSQL systemd service is not enabled: "+output)
 			return result, nil
 		}
 		output = output2
@@ -79,7 +79,7 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	if strings.Contains(output, "enabled") {
 		result.Pass("PostgreSQL systemd service is enabled")
 	} else {
-		result.Fail("FAILURE", "PostgreSQL systemd service is not enabled: "+output)
+		result.Fail("PostgreSQL systemd service is not enabled: "+output)
 	}
 	return result, nil
 }
@@ -98,7 +98,7 @@ func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	if _, err := os.Stat(pgVersionFile); err != nil {
-		result.Fail("FAILURE", "PG_VERSION file not found in PGDATA: "+pgVersionFile)
+		result.Fail("PG_VERSION file not found in PGDATA: "+pgVersionFile)
 		return result, nil
 	}
 
@@ -165,7 +165,7 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(found) > 0 {
-		result.Fail("CRITICAL", "PGPASSWORD found in shell profile(s): "+strings.Join(found, ", "))
+		result.Critical("PGPASSWORD found in shell profile(s): "+strings.Join(found, ", "))
 	} else {
 		result.Pass("PGPASSWORD not found in any checked shell profile")
 	}
@@ -214,7 +214,7 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(pidsWithPassword) > 0 {
-		result.Fail("CRITICAL", fmt.Sprintf("PGPASSWORD found in environment of %d process(es): PIDs %s", len(pidsWithPassword), strings.Join(pidsWithPassword, ", ")))
+		result.Critical(fmt.Sprintf("PGPASSWORD found in environment of %d process(es): PIDs %s", len(pidsWithPassword), strings.Join(pidsWithPassword, ", ")))
 	} else {
 		result.Pass("PGPASSWORD not found in any process environment")
 	}
@@ -375,7 +375,7 @@ func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*check
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
 	if err != nil {
-		result.Fail("FAILURE", "Cannot read PG_VERSION file: "+err.Error())
+		result.Fail("Cannot read PG_VERSION file: "+err.Error())
 		return result, nil
 	}
 
@@ -385,7 +385,7 @@ func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*check
 	if fileVersion == runningVersion {
 		result.Pass(fmt.Sprintf("PG_VERSION (%s) matches running version (%s)", fileVersion, runningVersion))
 	} else {
-		result.Fail("FAILURE", fmt.Sprintf("PG_VERSION (%s) does not match running version (%s)", fileVersion, runningVersion))
+		result.Fail(fmt.Sprintf("PG_VERSION (%s) does not match running version (%s)", fileVersion, runningVersion))
 	}
 	return result, nil
 }
@@ -405,7 +405,7 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
 	if err != nil {
-		result.Fail("FAILURE", "Cannot read PGDATA/PG_VERSION: "+err.Error())
+		result.Fail("Cannot read PGDATA/PG_VERSION: "+err.Error())
 		return result, nil
 	}
 
@@ -426,7 +426,7 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 		if fileVersion == major {
 			result.Pass(fmt.Sprintf("PGDATA/PG_VERSION (%s) is consistent with server version (%s)", fileVersion, serverVersion))
 		} else {
-			result.Fail("FAILURE", fmt.Sprintf("PGDATA/PG_VERSION (%s) is inconsistent with server_version_num (%s)", fileVersion, serverVersion))
+			result.Fail(fmt.Sprintf("PGDATA/PG_VERSION (%s) is inconsistent with server_version_num (%s)", fileVersion, serverVersion))
 		}
 	} else {
 		result.Status = checker.StatusManual
@@ -458,7 +458,7 @@ func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*check
 	if val == "on" {
 		result.Pass("Data checksums are enabled")
 	} else {
-		result.Fail("FAILURE", "Data checksums are not enabled (current: "+val+")")
+		result.Fail("Data checksums are not enabled (current: "+val+")")
 	}
 	return result, nil
 }

@@ -45,7 +45,7 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	out, err := exec.CommandContext(ctx, "sh", "-c", "umask").CombinedOutput()
 	if err != nil {
-		result.Fail("FAILURE", "Cannot determine umask: "+err.Error())
+		result.Fail("Cannot determine umask: "+err.Error())
 		return result, nil
 	}
 
@@ -53,7 +53,7 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	if umask == "0077" || umask == "077" {
 		result.Pass("umask is set correctly: " + umask)
 	} else {
-		result.Fail("FAILURE", "umask is "+umask+" (expected 0077)")
+		result.Fail("umask is "+umask+" (expected 0077)")
 	}
 	return result, nil
 }
@@ -117,7 +117,7 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if len(problems) > 0 {
 		for _, p := range problems {
-			result.Fail("FAILURE", p)
+			result.Fail(p)
 		}
 	} else {
 		result.Pass("Extension directory permissions are correct for: " + dynPath)
@@ -186,7 +186,7 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Fail("FAILURE", ".psql_history exists and is not linked to /dev/null: "+strings.Join(problems, ", "))
+		result.Fail(".psql_history exists and is not linked to /dev/null: "+strings.Join(problems, ", "))
 	} else {
 		result.Pass("No unprotected .psql_history files found")
 	}
@@ -235,7 +235,7 @@ func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Fail("CRITICAL", "Passwords found in .pg_service.conf: "+strings.Join(problems, ", "))
+		result.Critical("Passwords found in .pg_service.conf: "+strings.Join(problems, ", "))
 	} else {
 		result.Pass("No passwords found in .pg_service.conf files")
 	}
@@ -275,7 +275,7 @@ func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	info, err := os.Stat(hbaFile)
 	if err != nil {
-		result.Fail("FAILURE", "Cannot stat pg_hba.conf: "+err.Error())
+		result.Fail("Cannot stat pg_hba.conf: "+err.Error())
 		return result, nil
 	}
 
@@ -284,7 +284,7 @@ func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	if perm == 0600 || perm == 0640 {
 		result.Pass(fmt.Sprintf("pg_hba.conf permissions are restrictive: %04o", perm))
 	} else {
-		result.Fail("CRITICAL", fmt.Sprintf("pg_hba.conf has overly permissive mode: %04o (expected 0600 or 0640)", perm))
+		result.Critical(fmt.Sprintf("pg_hba.conf has overly permissive mode: %04o (expected 0600 or 0640)", perm))
 	}
 	return result, nil
 }
@@ -331,7 +331,7 @@ func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if len(problems) > 0 {
 		for _, p := range problems {
-			result.Fail("FAILURE", p)
+			result.Fail(p)
 		}
 	} else {
 		result.Pass("Unix socket directory permissions are acceptable: " + sockDirs)
@@ -356,7 +356,7 @@ func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	info, err := os.Stat(env.DataDir)
 	if err != nil {
-		result.Fail("FAILURE", "Cannot stat PGDATA directory: "+err.Error())
+		result.Fail("Cannot stat PGDATA directory: "+err.Error())
 		return result, nil
 	}
 
@@ -364,7 +364,7 @@ func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	if perm == 0700 {
 		result.Pass(fmt.Sprintf("PGDATA permissions are correct: %04o", perm))
 	} else {
-		result.Fail("CRITICAL", fmt.Sprintf("PGDATA has incorrect permissions: %04o (expected 0700)", perm))
+		result.Critical(fmt.Sprintf("PGDATA has incorrect permissions: %04o (expected 0700)", perm))
 	}
 	return result, nil
 }

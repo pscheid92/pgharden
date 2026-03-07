@@ -76,20 +76,20 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if !hasPgAudit {
-		result.Fail("FAILURE", "pgaudit is not in shared_preload_libraries (current: '"+val+"')")
+		result.Fail("pgaudit is not in shared_preload_libraries (current: '"+val+"')")
 		return result, nil
 	}
 
-	result.Messages = append(result.Messages, checker.Message{Level: "SUCCESS", Content: "pgaudit is in shared_preload_libraries"})
+	result.Messages = append(result.Messages, checker.Message{Level: checker.LevelSuccess, Content: "pgaudit is in shared_preload_libraries"})
 
 	auditLog, err := checker.ShowSetting(ctx, env.DB, "pgaudit.log")
 	if err != nil {
-		result.Fail("FAILURE", "pgaudit is loaded but pgaudit.log is not set: "+err.Error())
+		result.Fail("pgaudit is loaded but pgaudit.log is not set: "+err.Error())
 		return result, nil
 	}
 
 	if auditLog == "" || auditLog == "none" {
-		result.Fail("FAILURE", "pgaudit.log is set to '"+auditLog+"', should be configured for auditing")
+		result.Fail("pgaudit.log is set to '"+auditLog+"', should be configured for auditing")
 	} else {
 		result.Pass("pgaudit.log is set to: " + auditLog)
 	}
@@ -122,7 +122,7 @@ func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*chec
 
 	result := checker.NewResult(checker.SeverityWarning)
 	if len(missing) > 0 {
-		result.Fail("FAILURE", "log_line_prefix is missing: "+strings.Join(missing, ", ")+" (current: '"+val+"')")
+		result.Fail("log_line_prefix is missing: "+strings.Join(missing, ", ")+" (current: '"+val+"')")
 	} else {
 		result.Pass("log_line_prefix contains all required tokens: " + val)
 	}
