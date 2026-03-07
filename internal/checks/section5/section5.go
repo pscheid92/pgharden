@@ -399,8 +399,8 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
-	// Parse timeout value (given in seconds as a string)
-	timeoutSec, parseErr := strconv.Atoi(strings.TrimSuffix(authTimeout, "s"))
+	// Parse timeout value — SHOW returns values like "1min", "30s", or "60".
+	timeoutSec, parseErr := parsePGInterval(authTimeout)
 	if parseErr != nil {
 		return nil, fmt.Errorf("parse authentication_timeout '%s': %w", authTimeout, parseErr)
 	}
@@ -768,4 +768,28 @@ func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	return result, nil
+}
+
+// parsePGInterval parses a PostgreSQL time value (e.g., "1min", "30s", "60") into seconds.
+func parsePGInterval(val string) (int, error) {
+	val = strings.TrimSpace(val)
+	for _, suffix := range []struct {
+		s string
+		m int
+	}{
+		{"min", 60},
+		{"ms", 0},
+		{"s", 1},
+		{"h", 3600},
+		{"d", 86400},
+	} {
+		if strings.HasSuffix(val, suffix.s) {
+			n, err := strconv.Atoi(strings.TrimSuffix(val, suffix.s))
+			if err != nil {
+				return 0, err
+			}
+			return n * suffix.m, nil
+		}
+	}
+	return strconv.Atoi(val)
 }
