@@ -5,13 +5,18 @@ BINARY  := pgharden-go
 PKG     := github.com/pgharden/pgharden/internal/buildinfo
 LDFLAGS := -ldflags "-s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE)"
 
-.PHONY: build test lint clean
+.PHONY: build test test-unit test-integration lint clean
 
 build:
 	go build $(LDFLAGS) -o $(BINARY) ./cmd/pgharden
 
-test:
-	go test ./...
+test: test-unit test-integration
+
+test-unit:
+	go test -short -race ./...
+
+test-integration:
+	go test -race -run TestIntegration -timeout 120s ./...
 
 lint:
 	golangci-lint run ./...

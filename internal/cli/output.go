@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"golang.org/x/term"
@@ -12,7 +13,6 @@ import (
 
 func writeReport(cfg *config.Config, opts *RunOptions, rpt *report.Report) error {
 	resolveFormat(cfg, opts)
-	useColor := cfg.Format == "text" && !opts.NoColor && os.Getenv("NO_COLOR") == "" && cfg.Output == "" && isTerminal(os.Stdout)
 
 	out, closer, err := openOutput(cfg.Output)
 	if err != nil {
@@ -22,15 +22,20 @@ func writeReport(cfg *config.Config, opts *RunOptions, rpt *report.Report) error
 		defer closer()
 	}
 
-	switch cfg.Format {
+	useColor := cfg.Format == "text" && !opts.NoColor && os.Getenv("NO_COLOR") == "" && cfg.Output == "" && isTerminal(os.Stdout)
+	return writeReportTo(out, cfg.Format, rpt, useColor)
+}
+
+func writeReportTo(w io.Writer, format string, rpt *report.Report, color bool) error {
+	switch format {
 	case "text":
-		return report.WriteText(out, rpt, useColor)
+		return report.WriteText(w, rpt, color)
 	case "json":
-		return report.WriteJSON(out, rpt)
+		return report.WriteJSON(w, rpt)
 	case "html":
-		return report.WriteHTML(out, rpt)
+		return report.WriteHTML(w, rpt)
 	default:
-		return fmt.Errorf("unsupported format: %s", cfg.Format)
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 }
 

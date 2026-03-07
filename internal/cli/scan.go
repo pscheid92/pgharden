@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/pgharden/pgharden/internal/buildinfo"
@@ -12,6 +13,24 @@ import (
 	"github.com/pgharden/pgharden/internal/environment"
 	"github.com/pgharden/pgharden/internal/report"
 )
+
+// runToWriter runs the full scan and writes the report to w. Used by tests.
+func runToWriter(ctx context.Context, cfg *config.Config, opts *RunOptions, w io.Writer) (int, error) {
+	conn, env, err := connect(ctx, cfg)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = conn.Close(ctx) }()
+
+	rpt := runChecks(ctx, cfg, env)
+
+	resolveFormat(cfg, opts)
+	if err := writeReportTo(w, cfg.Format, rpt, false); err != nil {
+		return 0, err
+	}
+
+	return exitCodeFromReport(rpt), nil
+}
 
 func run(ctx context.Context, cfg *config.Config, opts *RunOptions) (int, error) {
 	conn, env, err := connect(ctx, cfg)
