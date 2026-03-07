@@ -31,6 +31,11 @@ func (c *check_7_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	// On RDS, rds_replication role serves as the dedicated replication mechanism
+	if env.Platform == checker.PlatformRDS {
+		return c.checkRDS(ctx, env)
+	}
+
 	rows, err := env.DB.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolreplication = true")
 	if err != nil {
 		return nil, err
@@ -69,6 +74,21 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Pass("Dedicated replication user(s) found")
 	} else {
 		result.Fail("Only superuser accounts have REPLICATION privilege; a dedicated replication user should be created")
+	}
+	return result, nil
+}
+
+func (c *check_7_1) checkRDS(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var count int
+	if err := env.DB.QueryRow(ctx, "SELECT COUNT(*) FROM pg_roles WHERE rolname = 'rds_replication'").Scan(&count); err != nil {
+		return nil, err
+	}
+
+	result := checker.NewResult(checker.SeverityWarning)
+	if count > 0 {
+		result.Pass("rds_replication role exists (RDS dedicated replication mechanism)")
+	} else {
+		result.Fail("rds_replication role not found on RDS")
 	}
 	return result, nil
 }

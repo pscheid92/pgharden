@@ -177,6 +177,20 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query ssl: %w", err)
 	}
 
+	result := checker.NewResult(checker.SeverityCritical)
+
+	if sslOn != "on" {
+		result.Critical(fmt.Sprintf("ssl is '%s' (should be 'on').", sslOn))
+	} else {
+		result.Info("ssl is enabled.")
+	}
+
+	// On RDS/Aurora, SSL protocol version and passphrase are managed by AWS
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		result.Info("ssl_min_protocol_version managed by AWS")
+		return result, nil
+	}
+
 	sslMinVersion, err := checker.ShowSetting(ctx, env.DB, "ssl_min_protocol_version")
 	if errors.Is(err, checker.ErrPermissionDenied) {
 		return checker.SkippedPermission("ssl_min_protocol_version"), nil
@@ -191,14 +205,6 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_passphrase_command: %w", err)
-	}
-
-	result := checker.NewResult(checker.SeverityCritical)
-
-	if sslOn != "on" {
-		result.Critical(fmt.Sprintf("ssl is '%s' (should be 'on').", sslOn))
-	} else {
-		result.Info("ssl is enabled.")
 	}
 
 	if sslMinVersion != "TLSv1.2" && sslMinVersion != "TLSv1.3" {
@@ -290,6 +296,13 @@ var allowedCiphers = map[string]bool{
 }
 
 func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	// On RDS/Aurora, cipher list is managed by AWS
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		result := checker.NewResult(checker.SeverityWarning)
+		result.Pass("SSL cipher configuration is managed by AWS")
+		return result, nil
+	}
+
 	ciphers, err := checker.ShowSetting(ctx, env.DB, "ssl_ciphers")
 	if errors.Is(err, checker.ErrPermissionDenied) {
 		return checker.SkippedPermission("ssl_ciphers"), nil

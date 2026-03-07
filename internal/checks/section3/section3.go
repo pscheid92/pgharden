@@ -16,6 +16,7 @@ var (
 
 func Checks() []checker.Check {
 	checks := []checker.Check{
+		&check_3_1_3{},
 		&check_3_2{},
 		&check_3_1_22{},
 	}
@@ -27,7 +28,6 @@ func Checks() []checker.Check {
 
 var settingChecks = []checker.SettingCheck{
 	{CheckID: "3.1.2", Setting: "log_destination", Comparator: "neq", Expected: "", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.3", Setting: "logging_collector", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 	{CheckID: "3.1.4", Setting: "log_directory", Comparator: "neq", Expected: "", Sev: checker.SeverityWarning, Reqs: sqlOnlyCloudNA},
 	{CheckID: "3.1.5", Setting: "log_filename", Comparator: "neq", Expected: "", Sev: checker.SeverityInfo, Reqs: sqlOnlyCloudNA},
 	{CheckID: "3.1.6", Setting: "log_file_mode", Expected: "0600", Sev: checker.SeverityWarning, Reqs: sqlOnlyCloudNA},
@@ -53,6 +53,36 @@ var settingChecks = []checker.SettingCheck{
 	{CheckID: "3.1.27", Setting: "log_duration", Expected: "off", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 }
 
+// 3.1.3: logging_collector — on for bare-metal, off acceptable on container/zalando/rds/aurora.
+type check_3_1_3 struct{}
+
+func (c *check_3_1_3) ID() string { return "3.1.3" }
+
+func (c *check_3_1_3) Requirements() checker.CheckRequirements { return sqlOnly }
+
+func (c *check_3_1_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	val, err := checker.ShowSetting(ctx, env.DB, "logging_collector")
+	if err != nil {
+		return nil, err
+	}
+
+	result := checker.NewResult(checker.SeverityWarning)
+
+	if val == "on" {
+		result.Pass("logging_collector is enabled")
+		return result, nil
+	}
+
+	// On non-bare-metal platforms, off is acceptable
+	if env.Platform != checker.PlatformBareMetal {
+		result.Pass("logging_collector is off (acceptable on " + env.Platform + "; logs managed by platform)")
+		return result, nil
+	}
+
+	result.Fail("logging_collector is 'off', expected 'on'")
+	return result, nil
+}
+
 type check_3_2 struct{}
 
 func (c *check_3_2) ID() string { return "3.2" }
@@ -62,7 +92,9 @@ func (c *check_3_2) Requirements() checker.CheckRequirements { return sqlOnly }
 func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	val, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
 	if errors.Is(err, checker.ErrPermissionDenied) {
-		return checker.SkippedPermission("shared_preload_libraries"), nil
+		// On RDS/Aurora, shared_preload_libraries may not be readable;
+		// fall back to checking pg_extension for pgaudit.
+		return c.checkViaExtension(ctx, env)
 	}
 	if err != nil {
 		return nil, err
@@ -79,7 +111,7 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if !hasPgAudit {
-		result.Fail("pgaudit is not in shared_preload_libraries (current: '"+val+"')")
+		result.Fail("pgaudit is not in shared_preload_libraries (current: '" + val + "')")
 		return result, nil
 	}
 
@@ -87,12 +119,44 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	auditLog, err := checker.ShowSetting(ctx, env.DB, "pgaudit.log")
 	if err != nil {
-		result.Fail("pgaudit is loaded but pgaudit.log is not set: "+err.Error())
+		result.Fail("pgaudit is loaded but pgaudit.log is not set: " + err.Error())
 		return result, nil
 	}
 
 	if auditLog == "" || auditLog == "none" {
-		result.Fail("pgaudit.log is set to '"+auditLog+"', should be configured for auditing")
+		result.Fail("pgaudit.log is set to '" + auditLog + "', should be configured for auditing")
+	} else {
+		result.Pass("pgaudit.log is set to: " + auditLog)
+	}
+	return result, nil
+}
+
+func (c *check_3_2) checkViaExtension(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+	var count int
+	if err := env.DB.QueryRow(ctx, "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pgaudit'").Scan(&count); err != nil {
+		return nil, err
+	}
+
+	result := checker.NewResult(checker.SeverityWarning)
+	if count == 0 {
+		result.Fail("pgaudit extension is not installed (checked via pg_extension)")
+		return result, nil
+	}
+
+	result.Info("pgaudit extension is installed (detected via pg_extension)")
+
+	auditLog, err := checker.ShowSetting(ctx, env.DB, "pgaudit.log")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		result.Pass("pgaudit is installed; pgaudit.log not readable (managed platform)")
+		return result, nil
+	}
+	if err != nil {
+		result.Fail("pgaudit is installed but pgaudit.log is not set: " + err.Error())
+		return result, nil
+	}
+
+	if auditLog == "" || auditLog == "none" {
+		result.Fail("pgaudit.log is set to '" + auditLog + "', should be configured for auditing")
 	} else {
 		result.Pass("pgaudit.log is set to: " + auditLog)
 	}
@@ -111,7 +175,12 @@ func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*chec
 		return nil, err
 	}
 
+	// RDS/Aurora use their own log_line_prefix format with different tokens
 	required := []string{"%m", "%p", "%d", "%u", "%a", "%h"}
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		required = []string{"%t", "%r", "%u", "%d", "%p"}
+	}
+
 	var missing []string
 	for _, tok := range required {
 		if !strings.Contains(val, tok) {

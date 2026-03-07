@@ -113,7 +113,12 @@ func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := checker.NewResult(checker.SeverityCritical)
 
 	if listenAddr == "*" || listenAddr == "0.0.0.0" {
-		result.Critical(fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
+		// On container/zalando, listen_addresses='*' is expected (network policy controls access)
+		if env.Platform == checker.PlatformContainer || env.Platform == checker.PlatformZalando {
+			result.Pass(fmt.Sprintf("listen_addresses is '%s' (acceptable on %s; network policy controls access)", listenAddr, env.Platform))
+		} else {
+			result.Critical(fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
+		}
 	} else {
 		result.Pass(fmt.Sprintf("listen_addresses is set to '%s'.", listenAddr))
 	}
@@ -220,8 +225,13 @@ func (c *check_5_5) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	rows, err := env.DB.Query(ctx,
-		"SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1")
+	query := "SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1"
+	// On RDS/Aurora, exclude built-in managed roles
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		query += " AND rolname NOT IN ('rdsadmin', 'rds_replication', 'rdsrepladmin')"
+	}
+
+	rows, err := env.DB.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query connection limits: %w", err)
 	}
@@ -298,6 +308,25 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query authentication_timeout: %w", err)
 	}
 
+	result := checker.NewResult(checker.SeverityWarning)
+
+	timeoutSec, parseErr := parsePGInterval(authTimeout)
+	if parseErr != nil {
+		return nil, fmt.Errorf("parse authentication_timeout '%s': %w", authTimeout, parseErr)
+	}
+
+	if timeoutSec > 60 {
+		result.FailWarn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
+	} else {
+		result.Info(fmt.Sprintf("authentication_timeout is %ds.", timeoutSec))
+	}
+
+	// On RDS/Aurora, auth_delay is not available as a preload library
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		result.Info("auth_delay check skipped (not available on " + env.Platform + ")")
+		return result, nil
+	}
+
 	libs, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
 	if errors.Is(err, checker.ErrPermissionDenied) {
 		return checker.SkippedPermission("shared_preload_libraries"), nil
@@ -306,20 +335,7 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
 
-	result := checker.NewResult(checker.SeverityWarning)
-
-	timeoutSec, parseErr := parsePGInterval(authTimeout)
-	if parseErr != nil {
-		return nil, fmt.Errorf("parse authentication_timeout '%s': %w", authTimeout, parseErr)
-	}
-
 	hasAuthDelay := strings.Contains(strings.ToLower(libs), "auth_delay")
-
-	if timeoutSec > 60 {
-		result.FailWarn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
-	} else {
-		result.Info(fmt.Sprintf("authentication_timeout is %ds.", timeoutSec))
-	}
 
 	if !hasAuthDelay {
 		result.FailWarn("auth_delay is not loaded in shared_preload_libraries.")

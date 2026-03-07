@@ -92,6 +92,17 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, fmt.Errorf("scan superusers: %w", err)
 	}
 
+	// On RDS/Aurora, rdsadmin is a built-in superuser and should be excluded
+	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+		filtered := superusers[:0]
+		for _, su := range superusers {
+			if su != "rdsadmin" {
+				filtered = append(filtered, su)
+			}
+		}
+		superusers = filtered
+	}
+
 	result := checker.NewResult(checker.SeverityWarning)
 
 	if len(superusers) <= 1 {
