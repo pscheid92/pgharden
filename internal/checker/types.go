@@ -2,10 +2,11 @@ package checker
 
 import (
 	"context"
+	"errors"
 	"slices"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type Severity int
@@ -128,12 +129,13 @@ type HBAEntry struct {
 	Options    string
 }
 
-// ShowSetting runs SHOW <name> and returns the value. If the query fails due to
-// permission denied, it returns ("", ErrPermissionDenied) so checks can skip gracefully.
 func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error) {
 	var val string
-	if err := db.QueryRow(ctx, "SHOW "+name).Scan(&val); err != nil {
-		if strings.Contains(err.Error(), "permission denied") {
+	if err := db.QueryRow(ctx,
+		"SELECT setting FROM pg_settings WHERE name = $1", name,
+	).Scan(&val); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42501" {
 			return "", ErrPermissionDenied
 		}
 		return "", err

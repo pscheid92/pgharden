@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pashagolub/pgxmock/v4"
 )
 
 func TestSettingCheckEq(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("on"),
 	)
 
@@ -27,7 +28,7 @@ func TestSettingCheckEq(t *testing.T) {
 
 func TestSettingCheckEqFail(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("off"),
 	)
 
@@ -43,7 +44,7 @@ func TestSettingCheckEqFail(t *testing.T) {
 
 func TestSettingCheckNeq(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW log_destination").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("stderr"),
 	)
 
@@ -59,7 +60,7 @@ func TestSettingCheckNeq(t *testing.T) {
 
 func TestSettingCheckNeqFail(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW log_destination").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow(""),
 	)
 
@@ -75,7 +76,7 @@ func TestSettingCheckNeqFail(t *testing.T) {
 
 func TestSettingCheckContains(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW shared_preload_libraries").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("pg_stat_statements,pgaudit"),
 	)
 
@@ -91,7 +92,7 @@ func TestSettingCheckContains(t *testing.T) {
 
 func TestSettingCheckOneof(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW log_statement").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("ddl"),
 	)
 
@@ -107,7 +108,7 @@ func TestSettingCheckOneof(t *testing.T) {
 
 func TestSettingCheckOneofFail(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW log_statement").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("none"),
 	)
 
@@ -123,7 +124,7 @@ func TestSettingCheckOneofFail(t *testing.T) {
 
 func TestSettingCheckPermissionDenied(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("permission denied for parameter"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnError(&pgconn.PgError{Code: "42501"})
 
 	c := &SettingCheck{CheckID: "t.5", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
 	result, err := c.Run(context.Background(), &Environment{DB: mock})
@@ -137,7 +138,7 @@ func TestSettingCheckPermissionDenied(t *testing.T) {
 
 func TestSettingCheckQueryError(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW ssl").WillReturnError(fmt.Errorf("connection lost"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnError(fmt.Errorf("connection lost"))
 
 	c := &SettingCheck{CheckID: "t.6", Setting: "ssl", Expected: "on", Sev: SeverityWarning}
 	_, err := c.Run(context.Background(), &Environment{DB: mock})
@@ -151,7 +152,7 @@ func TestSettingCheckQueryError(t *testing.T) {
 
 func TestSettingCheckCustomMessages(t *testing.T) {
 	mock := newMockDB(t)
-	mock.ExpectQuery("SHOW ssl").WillReturnRows(
+	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
 		pgxmock.NewRows([]string{"setting"}).AddRow("on"),
 	)
 
