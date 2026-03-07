@@ -9,15 +9,16 @@ import (
 
 var sqlOnly = checker.CheckRequirements{SQLOnly: true}
 
-func init() {
-	// Custom checks that require hand-written logic.
-	checker.Register(&check_3_2{})
-	checker.Register(&check_3_1_22{})
-
-	// Data-driven setting checks.
-	for i := range settingChecks {
-		checker.Register(&settingChecks[i])
+// Checks returns all Section 3 checks.
+func Checks() []checker.Check {
+	checks := []checker.Check{
+		&check_3_2{},
+		&check_3_1_22{},
 	}
+	for i := range settingChecks {
+		checks = append(checks, &settingChecks[i])
+	}
+	return checks
 }
 
 var settingChecks = []checker.SettingCheck{

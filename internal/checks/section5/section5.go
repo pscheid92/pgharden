@@ -12,19 +12,22 @@ import (
 	"github.com/pgharden/pgharden/internal/netmask"
 )
 
-func init() {
-	checker.Register(&check_5_1{})
-	checker.Register(&check_5_2{})
-	checker.Register(&check_5_3{})
-	checker.Register(&check_5_4{})
-	checker.Register(&check_5_5{})
-	checker.Register(&check_5_6{})
-	checker.Register(&check_5_7{})
-	checker.Register(&check_5_8{})
-	checker.Register(&check_5_9{})
-	checker.Register(&check_5_10{})
-	checker.Register(&check_5_11{})
-	checker.Register(&check_5_12{})
+// Checks returns all Section 5 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_5_1{},
+		&check_5_2{},
+		&check_5_3{},
+		&check_5_4{},
+		&check_5_5{},
+		&check_5_6{},
+		&check_5_7{},
+		&check_5_8{},
+		&check_5_9{},
+		&check_5_10{},
+		&check_5_11{},
+		&check_5_12{},
+	}
 }
 
 // ensureHBA loads the HBA entries into env if not already loaded.

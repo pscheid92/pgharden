@@ -1,0 +1,14 @@
+package buildinfo
+
+import "fmt"
+
+// Set via -ldflags at build time.
+var (
+	Version = "dev"
+	Commit  = "unknown"
+	Date    = "unknown"
+)
+
+func String() string {
+	return fmt.Sprintf("pgharden %s (commit %s, built %s)", Version, Commit, Date)
+}

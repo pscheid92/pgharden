@@ -9,17 +9,20 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func init() {
-	checker.Register(&check_6_2{})
-	checker.Register(&check_6_3{})
-	checker.Register(&check_6_4{})
-	checker.Register(&check_6_5{})
-	checker.Register(&check_6_6{})
-	checker.Register(&check_6_7{})
-	checker.Register(&check_6_8{})
-	checker.Register(&check_6_9{})
-	checker.Register(&check_6_10{})
-	checker.Register(&check_6_11{})
+// Checks returns all Section 6 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_6_2{},
+		&check_6_3{},
+		&check_6_4{},
+		&check_6_5{},
+		&check_6_6{},
+		&check_6_7{},
+		&check_6_8{},
+		&check_6_9{},
+		&check_6_10{},
+		&check_6_11{},
+	}
 }
 
 // check_6_2 - Backend runtime parameters

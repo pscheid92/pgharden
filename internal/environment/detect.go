@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/connection"
 )
@@ -20,9 +19,9 @@ var (
 )
 
 // Detect probes the runtime environment and builds a checker.Environment.
-func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*checker.Environment, error) {
+func Detect(ctx context.Context, conn *connection.Conn) (*checker.Environment, error) {
 	env := &checker.Environment{
-		DB:       db,
+		DB:       conn.DB,
 		Commands: make(map[string]bool),
 		OS:       runtime.GOOS,
 	}
@@ -36,7 +35,7 @@ func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*c
 	env.PGVersion = parseMajorVersion(versionStr)
 
 	// Detect privileges
-	privs, err := connection.DetectPrivileges(ctx, conn)
+	privs, err := conn.DetectPrivileges(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +44,10 @@ func Detect(ctx context.Context, conn *pgx.Conn, db *connection.ConnWrapper) (*c
 	env.IsPGMonitor = privs.IsPGMonitor
 
 	// Detect data directory
-	if err := conn.QueryRow(ctx, "SHOW data_directory").Scan(&env.DataDir); err == nil {
-		// Check if we can access it
-		if _, err := os.Stat(env.DataDir); err == nil {
+	var dataDir string
+	if err := conn.QueryRow(ctx, "SHOW data_directory").Scan(&dataDir); err == nil {
+		env.DataDir = dataDir
+		if _, err := os.Stat(dataDir); err == nil {
 			env.HasFilesystem = true
 		}
 	}
@@ -103,16 +103,13 @@ func parseMajorVersion(versionStr string) int {
 }
 
 func detectContainer() bool {
-	// Check for Docker
 	if _, err := os.Stat("/.dockerenv"); err == nil {
 		return true
 	}
 
-	// Check cgroup for container indicators
 	data, err := os.ReadFile("/proc/1/cgroup")
 	if err == nil {
-		content := string(data)
-		if containerRe.MatchString(content) {
+		if containerRe.MatchString(string(data)) {
 			return true
 		}
 	}

@@ -11,21 +11,24 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func init() {
-	checker.Register(&check_1_1{})
-	checker.Register(&check_1_2{})
-	checker.Register(&check_1_3{})
-	checker.Register(&check_1_5{})
-	checker.Register(&check_1_6{})
-	checker.Register(&check_1_7{})
-	checker.Register(&check_1_8{})
-	checker.Register(&check_1_9{})
-	checker.Register(&check_1_1_1{})
-	checker.Register(&check_1_4_1{})
-	checker.Register(&check_1_4_2{})
-	checker.Register(&check_1_4_3{})
-	checker.Register(&check_1_4_4{})
-	checker.Register(&check_1_4_5{})
+// Checks returns all Section 1 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_1_1{},
+		&check_1_2{},
+		&check_1_3{},
+		&check_1_5{},
+		&check_1_6{},
+		&check_1_7{},
+		&check_1_8{},
+		&check_1_9{},
+		&check_1_1_1{},
+		&check_1_4_1{},
+		&check_1_4_2{},
+		&check_1_4_3{},
+		&check_1_4_4{},
+		&check_1_4_5{},
+	}
 }
 
 // check_1_1 — 1.1: Verify PostgreSQL packages are obtained from authorized repositories

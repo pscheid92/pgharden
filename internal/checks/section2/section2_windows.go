@@ -1,5 +1,6 @@
 package section2
 
-// Section 2 checks require Unix filesystem semantics (permissions, ownership)
-// and are not applicable on Windows. All checks self-register only on
-// Unix-like systems via the build tag on section2.go.
+import "github.com/pgharden/pgharden/internal/checker"
+
+// Checks returns no checks on Windows — Section 2 requires Unix filesystem semantics.
+func Checks() []checker.Check { return nil }

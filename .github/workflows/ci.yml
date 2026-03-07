@@ -44,5 +44,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
-      - run: go build -o pgharden ./cmd/pgharden
+      - name: Build with version
+        run: |
+          PKG=github.com/pgharden/pgharden/internal/buildinfo
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          go build -ldflags "-s -w -X ${PKG}.Version=${VERSION} -X ${PKG}.Commit=${COMMIT} -X ${PKG}.Date=${DATE}" -o pgharden ./cmd/pgharden
       - run: ./pgharden version

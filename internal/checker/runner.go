@@ -9,6 +9,7 @@ import (
 
 // Runner orchestrates check execution with filtering and skip logic.
 type Runner struct {
+	Checks         []Check  // The checks to run.
 	Env            *Environment
 	IncludeChecks  []string // If non-empty, only run these check IDs.
 	ExcludeChecks  []string // Skip these check IDs.
@@ -23,9 +24,9 @@ type RunResult struct {
 	Err     error
 }
 
-// RunAll executes all registered checks, respecting filters and requirements.
+// RunAll executes all checks, respecting filters and requirements.
 func (r *Runner) RunAll(ctx context.Context) []RunResult {
-	checks := All()
+	checks := r.Checks
 	results := make([]RunResult, 0, len(checks))
 
 	for _, c := range checks {

@@ -4,41 +4,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
-var (
-	registryMu sync.RWMutex
-	registry   = make(map[string]Check)
-)
-
-// Register adds a check to the global registry. Called from init() in check files.
-func Register(c Check) {
-	registryMu.Lock()
-	defer registryMu.Unlock()
-	registry[c.ID()] = c
-}
-
-// All returns all registered checks sorted by ID.
-func All() []Check {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
-
-	checks := make([]Check, 0, len(registry))
-	for _, c := range registry {
-		checks = append(checks, c)
-	}
+// SortChecks sorts checks by their dotted-number IDs.
+func SortChecks(checks []Check) {
 	sort.Slice(checks, func(i, j int) bool {
 		return CompareCheckIDs(checks[i].ID(), checks[j].ID()) < 0
 	})
-	return checks
-}
-
-// Get returns a specific check by ID, or nil if not found.
-func Get(id string) Check {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
-	return registry[id]
 }
 
 // CompareCheckIDs compares two dotted-number check IDs (e.g., "1.4.3" vs "1.10").

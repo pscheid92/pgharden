@@ -1,7 +1,6 @@
 package labels
 
-func init() {
-	RegisterLanguage("fr_FR", &LabelSet{
+var frFR = &LabelSet{
 		Sections: map[string]string{
 			"1": "Installation et correctifs",
 			"2": "Permissions des répertoires et fichiers",
@@ -101,5 +100,4 @@ func init() {
 			"8.2":  {Title: "S'assurer qu'un outil de sauvegarde est configuré"},
 			"8.3":  {Title: "S'assurer que la configuration des fichiers spéciaux est vérifiée"},
 		},
-	})
-}
+	}

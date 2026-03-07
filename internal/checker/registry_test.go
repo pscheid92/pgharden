@@ -32,58 +32,20 @@ func TestCompareCheckIDs(t *testing.T) {
 	}
 }
 
-func TestRegisterAndGet(t *testing.T) {
-	// Save and restore registry state.
-	registryMu.Lock()
-	origRegistry := registry
-	registry = make(map[string]Check)
-	registryMu.Unlock()
-	defer func() {
-		registryMu.Lock()
-		registry = origRegistry
-		registryMu.Unlock()
-	}()
-
-	c := &SettingCheck{CheckID: "99.1", Setting: "test", Expected: "on"}
-	Register(c)
-
-	got := Get("99.1")
-	if got == nil {
-		t.Fatal("Get returned nil for registered check")
-	}
-	if got.ID() != "99.1" {
-		t.Errorf("got ID %q, want %q", got.ID(), "99.1")
+func TestSortChecks(t *testing.T) {
+	checks := []Check{
+		&SettingCheck{CheckID: "2.1"},
+		&SettingCheck{CheckID: "1.10"},
+		&SettingCheck{CheckID: "1.2"},
+		&SettingCheck{CheckID: "1.1"},
+		&SettingCheck{CheckID: "3.1.2"},
 	}
 
-	if Get("99.99") != nil {
-		t.Error("Get returned non-nil for unregistered check")
-	}
-}
+	SortChecks(checks)
 
-func TestAllSorted(t *testing.T) {
-	registryMu.Lock()
-	origRegistry := registry
-	registry = make(map[string]Check)
-	registryMu.Unlock()
-	defer func() {
-		registryMu.Lock()
-		registry = origRegistry
-		registryMu.Unlock()
-	}()
-
-	ids := []string{"2.1", "1.10", "1.2", "1.1", "3.1.2"}
-	for _, id := range ids {
-		Register(&SettingCheck{CheckID: id, Setting: "x", Expected: "y"})
-	}
-
-	all := All()
-	if len(all) != len(ids) {
-		t.Fatalf("got %d checks, want %d", len(all), len(ids))
-	}
-
-	for i := 1; i < len(all); i++ {
-		if CompareCheckIDs(all[i-1].ID(), all[i].ID()) > 0 {
-			t.Errorf("checks not sorted: %s before %s", all[i-1].ID(), all[i].ID())
+	for i := 1; i < len(checks); i++ {
+		if CompareCheckIDs(checks[i-1].ID(), checks[i].ID()) > 0 {
+			t.Errorf("checks not sorted: %s before %s", checks[i-1].ID(), checks[i].ID())
 		}
 	}
 }

@@ -2,7 +2,7 @@ package netmask
 
 import (
 	"fmt"
-	"math/big"
+	"math/bits"
 	"net/netip"
 	"strings"
 )
@@ -72,15 +72,18 @@ func netmaskToPrefix(ip, mask string) (string, error) {
 		maskBytes = b[:]
 	}
 
-	maskInt := new(big.Int).SetBytes(maskBytes)
-	bits := 0
-	for i := maskInt.BitLen() - 1; i >= 0; i-- {
-		if maskInt.Bit(i) == 1 {
-			bits++
-		} else {
-			break
+	// Count leading 1-bits across all bytes.
+	prefix := 0
+	for _, b := range maskBytes {
+		if b == 0xff {
+			prefix += 8
+			continue
 		}
+		// Count leading ones in this byte, then stop — a valid netmask
+		// has no more 1-bits after the first 0-bit.
+		prefix += bits.LeadingZeros8(^b)
+		break
 	}
 
-	return fmt.Sprintf("%s/%d", ip, bits), nil
+	return fmt.Sprintf("%s/%d", ip, prefix), nil
 }

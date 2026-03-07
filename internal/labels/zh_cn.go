@@ -1,7 +1,6 @@
 package labels
 
-func init() {
-	RegisterLanguage("zh_CN", &LabelSet{
+var zhCN = &LabelSet{
 		Sections: map[string]string{
 			"1": "安装和补丁",
 			"2": "目录和文件权限",
@@ -101,5 +100,4 @@ func init() {
 			"8.2":  {Title: "确保已配置备份和恢复工具"},
 			"8.3":  {Title: "确保已审查特殊文件和程序配置"},
 		},
-	})
-}
+	}

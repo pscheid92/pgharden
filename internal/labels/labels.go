@@ -2,8 +2,8 @@ package labels
 
 // LabelSet holds titles and descriptions for all checks in a language.
 type LabelSet struct {
-	Sections map[string]string      // section ID → title
-	Checks   map[string]CheckLabel  // check ID → label
+	Sections map[string]string     // section ID → title
+	Checks   map[string]CheckLabel // check ID → label
 }
 
 // CheckLabel holds the display text for a single check.
@@ -13,11 +13,10 @@ type CheckLabel struct {
 	Manual      bool
 }
 
-var languages = map[string]*LabelSet{}
-
-// RegisterLanguage adds a language's labels.
-func RegisterLanguage(lang string, ls *LabelSet) {
-	languages[lang] = ls
+var languages = map[string]*LabelSet{
+	"en_US": enUS,
+	"fr_FR": frFR,
+	"zh_CN": zhCN,
 }
 
 func get(lang string) *LabelSet {

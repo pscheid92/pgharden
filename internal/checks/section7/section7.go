@@ -8,14 +8,17 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func init() {
-	checker.Register(&check_7_1{})
-	checker.Register(&checker.SettingCheck{
-		CheckID: "7.2", Setting: "log_replication_commands", Expected: "on",
-		Sev: checker.SeverityWarning, Reqs: checker.CheckRequirements{SQLOnly: true},
-	})
-	checker.Register(&check_7_4{})
-	checker.Register(&check_7_5{})
+// Checks returns all Section 7 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_7_1{},
+		&checker.SettingCheck{
+			CheckID: "7.2", Setting: "log_replication_commands", Expected: "on",
+			Sev: checker.SeverityWarning, Reqs: checker.CheckRequirements{SQLOnly: true},
+		},
+		&check_7_4{},
+		&check_7_5{},
+	}
 }
 
 // check_7_1 - Dedicated replication user

@@ -1,7 +1,6 @@
 package labels
 
-func init() {
-	RegisterLanguage("en_US", &LabelSet{
+var enUS = &LabelSet{
 		Sections: map[string]string{
 			"1": "Installation and Patches",
 			"2": "Directory and File Permissions",
@@ -117,5 +116,4 @@ func init() {
 			"8.2": {Title: "Ensure a backup and recovery tool is configured", Description: "A backup tool like pgBackRest should be installed and configured."},
 			"8.3": {Title: "Ensure special file and program configuration is reviewed", Description: "Review settings that reference external files and programs."},
 		},
-	})
-}
+	}

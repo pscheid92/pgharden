@@ -14,15 +14,18 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func init() {
-	checker.Register(&check_2_1{})
-	checker.Register(&check_2_2{})
-	checker.Register(&check_2_3{})
-	checker.Register(&check_2_4{})
-	checker.Register(&check_2_5{})
-	checker.Register(&check_2_6{})
-	checker.Register(&check_2_7{})
-	checker.Register(&check_2_8{})
+// Checks returns all Section 2 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_2_1{},
+		&check_2_2{},
+		&check_2_3{},
+		&check_2_4{},
+		&check_2_5{},
+		&check_2_6{},
+		&check_2_7{},
+		&check_2_8{},
+	}
 }
 
 // ---------------------------------------------------------------------------

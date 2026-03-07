@@ -9,9 +9,12 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func init() {
-	checker.Register(&check_8_2{})
-	checker.Register(&check_8_3{})
+// Checks returns all Section 8 checks.
+func Checks() []checker.Check {
+	return []checker.Check{
+		&check_8_2{},
+		&check_8_3{},
+	}
 }
 
 // check_8_2 - pgBackRest backup
