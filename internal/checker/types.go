@@ -112,7 +112,13 @@ type Environment struct {
 	Superusers []string
 }
 
-// DBQuerier abstracts database access. Satisfied by *pgx.Conn and pgxmock.
+func (e *Environment) ShouldCheckDB(db string) bool {
+	if len(e.AllowDatabases) > 0 {
+		return slices.Contains(e.AllowDatabases, db)
+	}
+	return !slices.Contains(e.ExcludeDatabases, db)
+}
+
 type DBQuerier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -142,23 +148,8 @@ func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error)
 	return val, nil
 }
 
-// SkippedPermission returns a SKIPPED CheckResult for permission errors.
 func SkippedPermission(setting string) *CheckResult {
-	return &CheckResult{
-		Status:     StatusSkipped,
-		SkipReason: "Insufficient privileges to read " + setting,
-	}
+	return &CheckResult{Status: StatusSkipped, SkipReason: "Insufficient privileges to read " + setting}
 }
 
-var ErrPermissionDenied = errPermission{}
-
-type errPermission struct{}
-
-func (errPermission) Error() string { return "permission denied" }
-
-func (e *Environment) ShouldCheckDB(db string) bool {
-	if len(e.AllowDatabases) > 0 {
-		return slices.Contains(e.AllowDatabases, db)
-	}
-	return !slices.Contains(e.ExcludeDatabases, db)
-}
+var ErrPermissionDenied = errors.New("permission denied")
