@@ -66,16 +66,16 @@ func TestParseLineWithOptions(t *testing.T) {
 	}
 }
 
-func TestIsAuthMethod(t *testing.T) {
+func TestAuthMethods(t *testing.T) {
 	for _, m := range []string{"trust", "reject", "scram-sha-256", "md5", "peer", "cert"} {
-		if !isAuthMethod(m) {
+		if !authMethods[m] {
 			t.Errorf("expected %q to be an auth method", m)
 		}
 	}
-	if isAuthMethod("192.168.1.0") {
+	if authMethods["192.168.1.0"] {
 		t.Error("IP address should not be an auth method")
 	}
-	if isAuthMethod("255.255.255.0") {
+	if authMethods["255.255.255.0"] {
 		t.Error("netmask should not be an auth method")
 	}
 }

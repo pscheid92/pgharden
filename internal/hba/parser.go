@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
-// LoadFromFile parses a pg_hba.conf file (fallback for PG < 15).
+// LoadFromFile parses a pg_hba.conf file, following include directives.
 func LoadFromFile(path string) ([]Entry, error) {
 	return parseFile(path, 0)
 }
 
+const maxIncludeDepth = 10
+
 func parseFile(path string, depth int) ([]Entry, error) {
-	if depth > 10 {
+	if depth > maxIncludeDepth {
 		return nil, fmt.Errorf("include depth exceeded")
 	}
 
@@ -26,65 +27,77 @@ func parseFile(path string, depth int) ([]Entry, error) {
 	defer func() { _ = f.Close() }()
 
 	var entries []Entry
-	scanner := bufio.NewScanner(f)
 	lineNum := 0
+	scanner := bufio.NewScanner(f)
 
 	for scanner.Scan() {
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
 
-		// Skip empty lines and comments
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
-		// Handle include directives
-		if after, ok := strings.CutPrefix(line, "include_dir "); ok {
-			dir := strings.TrimSpace(after)
-			dir = resolveIncludePath(dir, path)
-			dirEntries, err := os.ReadDir(dir)
+		if sub, handled, err := parseInclude(line, path, depth); handled {
 			if err != nil {
-				continue
-			}
-			for _, de := range dirEntries {
-				if de.IsDir() || !strings.HasSuffix(de.Name(), ".conf") {
-					continue
-				}
-				sub, err := parseFile(filepath.Join(dir, de.Name()), depth+1)
-				if err == nil {
-					entries = append(entries, sub...)
-				}
-			}
-			continue
-		}
-		if after, ok := strings.CutPrefix(line, "include_if_exists "); ok {
-			incPath := strings.TrimSpace(after)
-			incPath = resolveIncludePath(incPath, path)
-			sub, err := parseFile(incPath, depth+1)
-			if err == nil {
-				entries = append(entries, sub...)
-			}
-			continue
-		}
-		if after, ok := strings.CutPrefix(line, "include "); ok {
-			incPath := strings.TrimSpace(after)
-			incPath = resolveIncludePath(incPath, path)
-			sub, err := parseFile(incPath, depth+1)
-			if err != nil {
-				return nil, fmt.Errorf("include %s: %w", incPath, err)
+				return nil, err
 			}
 			entries = append(entries, sub...)
 			continue
 		}
 
-		// Parse HBA entry
-		entry, ok := parseLine(line, lineNum)
-		if ok {
+		if entry, ok := parseLine(line, lineNum); ok {
 			entries = append(entries, entry)
 		}
 	}
 
 	return entries, scanner.Err()
+}
+
+// parseInclude handles include, include_if_exists, and include_dir directives.
+// Returns (entries, handled, error). If handled is false, the line is not an include.
+func parseInclude(line, parentPath string, depth int) ([]Entry, bool, error) {
+	if after, ok := strings.CutPrefix(line, "include_dir "); ok {
+		entries, _ := parseIncludeDir(strings.TrimSpace(after), parentPath, depth)
+		return entries, true, nil
+	}
+
+	if after, ok := strings.CutPrefix(line, "include_if_exists "); ok {
+		incPath := resolveIncludePath(strings.TrimSpace(after), parentPath)
+		sub, _ := parseFile(incPath, depth+1)
+		return sub, true, nil
+	}
+
+	if after, ok := strings.CutPrefix(line, "include "); ok {
+		incPath := resolveIncludePath(strings.TrimSpace(after), parentPath)
+		sub, err := parseFile(incPath, depth+1)
+		if err != nil {
+			return nil, true, fmt.Errorf("include %s: %w", incPath, err)
+		}
+		return sub, true, nil
+	}
+
+	return nil, false, nil
+}
+
+func parseIncludeDir(dir, parentPath string, depth int) ([]Entry, error) {
+	dir = resolveIncludePath(dir, parentPath)
+	dirEntries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []Entry
+	for _, de := range dirEntries {
+		if de.IsDir() || !strings.HasSuffix(de.Name(), ".conf") {
+			continue
+		}
+		sub, err := parseFile(filepath.Join(dir, de.Name()), depth+1)
+		if err == nil {
+			entries = append(entries, sub...)
+		}
+	}
+	return entries, nil
 }
 
 func parseLine(line string, lineNum int) (Entry, bool) {
@@ -96,48 +109,40 @@ func parseLine(line string, lineNum int) (Entry, bool) {
 	e := Entry{
 		LineNumber: lineNum,
 		Type:       fields[0],
+		Database:   fields[1],
+		User:       fields[2],
 	}
-
-	idx := 1
-	e.Database = fields[idx]
-	idx++
-	e.User = fields[idx]
-	idx++
+	rest := fields[3:]
 
 	if e.Type == "local" {
-		// local  database  user  method  [options]
-		if idx < len(fields) {
-			e.Method = fields[idx]
-			idx++
-		}
+		e.Method = rest[0]
+		rest = rest[1:]
 	} else {
-		// host/hostssl/etc  database  user  address  method  [options]
-		if idx < len(fields) {
-			e.Address = fields[idx]
-			idx++
+		e.Address = rest[0]
+		rest = rest[1:]
+
+		// If the next field isn't an auth method, it's a netmask.
+		if len(rest) > 0 && !authMethods[rest[0]] {
+			e.Netmask = rest[0]
+			rest = rest[1:]
 		}
-		// Check if next field is a netmask (not an auth method)
-		if idx < len(fields) && !isAuthMethod(fields[idx]) {
-			e.Netmask = fields[idx]
-			idx++
-		}
-		if idx < len(fields) {
-			e.Method = fields[idx]
-			idx++
+		if len(rest) > 0 {
+			e.Method = rest[0]
+			rest = rest[1:]
 		}
 	}
 
-	if idx < len(fields) {
-		e.Options = strings.Join(fields[idx:], " ")
+	if len(rest) > 0 {
+		e.Options = strings.Join(rest, " ")
 	}
 
 	return e, true
 }
 
-func isAuthMethod(s string) bool {
-	methods := []string{"trust", "reject", "scram-sha-256", "md5", "password",
-		"gss", "sspi", "ident", "peer", "pam", "ldap", "radius", "cert"}
-	return slices.Contains(methods, s)
+var authMethods = map[string]bool{
+	"trust": true, "reject": true, "scram-sha-256": true, "md5": true,
+	"password": true, "gss": true, "sspi": true, "ident": true,
+	"peer": true, "pam": true, "ldap": true, "radius": true, "cert": true,
 }
 
 func resolveIncludePath(incPath, parentPath string) string {
