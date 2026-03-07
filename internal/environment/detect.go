@@ -64,30 +64,24 @@ func Detect(ctx context.Context, conn *pgx.Conn) (*checker.Environment, error) {
 	env.IsContainer = detectContainer()
 
 	// Get database list
-	rows, err := conn.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
+	dbRows, err := conn.Query(ctx, "SELECT datname FROM pg_database WHERE datallowconn ORDER BY datname")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to list databases: %v\n", err)
 	} else {
-		defer rows.Close()
-		for rows.Next() {
-			var dbname string
-			if err := rows.Scan(&dbname); err == nil {
-				env.Databases = append(env.Databases, dbname)
-			}
+		env.Databases, err = pgx.CollectRows(dbRows, pgx.RowTo[string])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to collect databases: %v\n", err)
 		}
 	}
 
 	// Get superuser list
-	srows, err := conn.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
+	suRows, err := conn.Query(ctx, "SELECT rolname FROM pg_roles WHERE rolsuper ORDER BY rolname")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to list superusers: %v\n", err)
 	} else {
-		defer srows.Close()
-		for srows.Next() {
-			var rolname string
-			if err := srows.Scan(&rolname); err == nil {
-				env.Superusers = append(env.Superusers, rolname)
-			}
+		env.Superusers, err = pgx.CollectRows(suRows, pgx.RowTo[string])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to collect superusers: %v\n", err)
 		}
 	}
 

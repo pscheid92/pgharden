@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/hba"
 	"github.com/pgharden/pgharden/internal/netmask"
@@ -595,15 +596,8 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		if err != nil {
 			return nil, err
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				return nil, err
-			}
-			env.Superusers = append(env.Superusers, name)
-		}
-		if err := rows.Err(); err != nil {
+		env.Superusers, err = pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
 			return nil, err
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
@@ -91,18 +92,9 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	if err != nil {
 		return nil, fmt.Errorf("query superusers: %w", err)
 	}
-	defer rows.Close()
-
-	var superusers []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, fmt.Errorf("scan superuser: %w", err)
-		}
-		superusers = append(superusers, name)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate superusers: %w", err)
+	superusers, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("scan superusers: %w", err)
 	}
 
 	result := checker.NewResult(checker.SeverityWarning)

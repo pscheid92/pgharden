@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
@@ -35,17 +36,8 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var replUsers []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, err
-		}
-		replUsers = append(replUsers, name)
-	}
-	if err := rows.Err(); err != nil {
+	replUsers, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
 		return nil, err
 	}
 
