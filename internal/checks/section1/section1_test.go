@@ -2,6 +2,7 @@ package section1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
@@ -16,6 +17,102 @@ func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *checker.Environment) {
 	}
 	t.Cleanup(func() { _ = mock.Close(context.Background()) })
 	return mock, &checker.Environment{DB: mock, PGVersion: 16}
+}
+
+func TestCheck_1_3_SQLPass(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnRows(pgxmock.NewRows([]string{"pg_read_file"}).AddRow("16\n"))
+
+	c := &check_1_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS, got %s", result.Status)
+	}
+}
+
+func TestCheck_1_3_NoAccessSkips(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnError(fmt.Errorf("permission denied"))
+
+	c := &check_1_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusSkipped {
+		t.Errorf("expected SKIPPED, got %s", result.Status)
+	}
+}
+
+func TestCheck_1_4_1_SQLPass(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnRows(pgxmock.NewRows([]string{"pg_read_file"}).AddRow("16\n"))
+
+	c := &check_1_4_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS, got %s", result.Status)
+	}
+}
+
+func TestCheck_1_4_1_SQLMismatch(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnRows(pgxmock.NewRows([]string{"pg_read_file"}).AddRow("15\n"))
+
+	c := &check_1_4_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL, got %s", result.Status)
+	}
+}
+
+func TestCheck_1_4_2_SQLPass(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnRows(pgxmock.NewRows([]string{"pg_read_file"}).AddRow("16\n"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("server_version_num").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("160004"))
+
+	c := &check_1_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS, got %s", result.Status)
+	}
+}
+
+func TestCheck_1_4_2_SQLMismatch(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT pg_read_file").
+		WillReturnRows(pgxmock.NewRows([]string{"pg_read_file"}).AddRow("15\n"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("server_version_num").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("160004"))
+
+	c := &check_1_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL, got %s", result.Status)
+	}
 }
 
 func TestCheck_1_4_3_ChecksumsEnabled(t *testing.T) {

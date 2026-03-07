@@ -2,6 +2,7 @@ package section1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,6 +11,28 @@ import (
 
 	"github.com/pgharden/pgharden/internal/checker"
 )
+
+var errNoAccess = errors.New("requires filesystem access or pg_read_server_files role")
+
+// readPGVersion tries to read the PG_VERSION file content via SQL first
+// (pg_read_file), then falls back to filesystem. Returns errNoAccess if
+// neither method is available.
+func readPGVersion(ctx context.Context, env *checker.Environment) (string, error) {
+	var content string
+	if err := env.DB.QueryRow(ctx, "SELECT pg_read_file('PG_VERSION')").Scan(&content); err == nil {
+		return strings.TrimSpace(content), nil
+	}
+
+	if env.HasFilesystem {
+		data, err := os.ReadFile(filepath.Join(env.DataDir, "PG_VERSION"))
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(data)), nil
+	}
+
+	return "", errNoAccess
+}
 
 func Checks() []checker.Check {
 	return []checker.Check{
@@ -60,7 +83,7 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		out2, err2 := exec.CommandContext(ctx, "bash", "-c", "systemctl is-enabled postgresql*").CombinedOutput()
 		output2 := strings.TrimSpace(string(out2))
 		if err2 != nil || !strings.Contains(output2, "enabled") {
-			result.Fail("PostgreSQL systemd service is not enabled: "+output)
+			result.Fail("PostgreSQL systemd service is not enabled: " + output)
 			return result, nil
 		}
 		output = output2
@@ -69,7 +92,7 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	if strings.Contains(output, "enabled") {
 		result.Pass("PostgreSQL systemd service is enabled")
 	} else {
-		result.Fail("PostgreSQL systemd service is not enabled: "+output)
+		result.Fail("PostgreSQL systemd service is not enabled: " + output)
 	}
 	return result, nil
 }
@@ -79,15 +102,20 @@ type check_1_3 struct{}
 func (c *check_1_3) ID() string { return "1.3" }
 
 func (c *check_1_3) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{}
 }
 
 func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
-	if _, err := os.Stat(pgVersionFile); err != nil {
-		result.Fail("PG_VERSION file not found in PGDATA: "+pgVersionFile)
+	_, err := readPGVersion(ctx, env)
+	if errors.Is(err, errNoAccess) {
+		result.Status = checker.StatusSkipped
+		result.SkipReason = errNoAccess.Error()
+		return result, nil
+	}
+	if err != nil {
+		result.Fail("PG_VERSION file not found in PGDATA: " + err.Error())
 		return result, nil
 	}
 
@@ -145,7 +173,7 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(found) > 0 {
-		result.Critical("PGPASSWORD found in shell profile(s): "+strings.Join(found, ", "))
+		result.Critical("PGPASSWORD found in shell profile(s): " + strings.Join(found, ", "))
 	} else {
 		result.Pass("PGPASSWORD not found in any checked shell profile")
 	}
@@ -326,20 +354,23 @@ type check_1_4_1 struct{}
 func (c *check_1_4_1) ID() string { return "1.4.1" }
 
 func (c *check_1_4_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{}
 }
 
 func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
-	data, err := os.ReadFile(pgVersionFile)
+	fileVersion, err := readPGVersion(ctx, env)
+	if errors.Is(err, errNoAccess) {
+		result.Status = checker.StatusSkipped
+		result.SkipReason = errNoAccess.Error()
+		return result, nil
+	}
 	if err != nil {
-		result.Fail("Cannot read PG_VERSION file: "+err.Error())
+		result.Fail("Cannot read PG_VERSION file: " + err.Error())
 		return result, nil
 	}
 
-	fileVersion := strings.TrimSpace(string(data))
 	runningVersion := fmt.Sprintf("%d", env.PGVersion)
 
 	if fileVersion == runningVersion {
@@ -355,20 +386,22 @@ type check_1_4_2 struct{}
 func (c *check_1_4_2) ID() string { return "1.4.2" }
 
 func (c *check_1_4_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{}
 }
 
 func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
-	data, err := os.ReadFile(pgVersionFile)
-	if err != nil {
-		result.Fail("Cannot read PGDATA/PG_VERSION: "+err.Error())
+	fileVersion, err := readPGVersion(ctx, env)
+	if errors.Is(err, errNoAccess) {
+		result.Status = checker.StatusSkipped
+		result.SkipReason = errNoAccess.Error()
 		return result, nil
 	}
-
-	fileVersion := strings.TrimSpace(string(data))
+	if err != nil {
+		result.Fail("Cannot read PGDATA/PG_VERSION: " + err.Error())
+		return result, nil
+	}
 
 	serverVersion, err := checker.ShowSetting(ctx, env.DB, "server_version_num")
 	if err != nil {
@@ -412,7 +445,7 @@ func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*check
 	if val == "on" {
 		result.Pass("Data checksums are enabled")
 	} else {
-		result.Fail("Data checksums are not enabled (current: "+val+")")
+		result.Fail("Data checksums are not enabled (current: " + val + ")")
 	}
 	return result, nil
 }
