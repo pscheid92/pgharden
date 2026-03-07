@@ -134,11 +134,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := checker.NewResult(checker.SeverityWarning)
 
 	if val == "" {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: "primary_conninfo is not set (this server is not a replica)",
-		})
+		result.Pass("primary_conninfo is not set (this server is not a replica)")
 		return result, nil
 	}
 
@@ -158,10 +154,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 			if value != "require" && value != "verify-ca" && value != "verify-full" {
 				result.Fail("primary_conninfo sslmode is '"+value+"', expected 'require', 'verify-ca', or 'verify-full'")
 			} else {
-				result.Messages = append(result.Messages, checker.Message{
-					Level:   "SUCCESS",
-					Content: "primary_conninfo sslmode is '" + value + "'",
-				})
+				result.Info("primary_conninfo sslmode is '" + value + "'")
 			}
 		}
 		if key == "sslcompression" {
@@ -169,10 +162,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 			if value != "1" {
 				result.Warn("primary_conninfo sslcompression is '" + value + "', expected '1'")
 			} else {
-				result.Messages = append(result.Messages, checker.Message{
-					Level:   "SUCCESS",
-					Content: "primary_conninfo sslcompression is enabled",
-				})
+				result.Info("primary_conninfo sslcompression is enabled")
 			}
 		}
 	}

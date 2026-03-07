@@ -122,6 +122,21 @@ func (r *CheckResult) Info(msg string) {
 	r.Messages = append(r.Messages, Message{Level: LevelInfo, Content: msg})
 }
 
+func ManualResult(msg string) *CheckResult {
+	return &CheckResult{
+		Status:   StatusManual,
+		Severity: SeverityInfo,
+		Messages: []Message{{Level: LevelInfo, Content: msg}},
+	}
+}
+
+func SkippedHBA(err error) *CheckResult {
+	return &CheckResult{
+		Status:     StatusSkipped,
+		SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
+	}
+}
+
 type Check interface {
 	ID() string
 	Requirements() CheckRequirements

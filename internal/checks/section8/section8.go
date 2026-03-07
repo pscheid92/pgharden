@@ -87,10 +87,7 @@ func (c *check_8_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d settings referencing external files and programs. Review for security.", count),
-	})
+	result.Info(fmt.Sprintf("Found %d settings referencing external files and programs. Review for security.", count))
 
 	return result, nil
 }

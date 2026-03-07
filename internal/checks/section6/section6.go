@@ -13,10 +13,10 @@ import (
 func Checks() []checker.Check {
 	return []checker.Check{
 		&check_6_2{},
-		&check_6_3{},
-		&check_6_4{},
-		&check_6_5{},
-		&check_6_6{},
+		&contextParamCheck{id: "6.3", context: "postmaster"},
+		&contextParamCheck{id: "6.4", context: "sighup"},
+		&contextParamCheck{id: "6.5", context: "superuser"},
+		&contextParamCheck{id: "6.6", context: "user"},
 		&check_6_7{},
 		&check_6_8{},
 		&check_6_9{},
@@ -90,20 +90,23 @@ func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	return result, nil
 }
 
-// check_6_3 - Postmaster runtime parameters
-type check_6_3 struct{}
+// contextParamCheck is a parameterized check for pg_settings context review.
+type contextParamCheck struct {
+	id      string
+	context string
+}
 
-func (c *check_6_3) ID() string { return "6.3" }
+func (c *contextParamCheck) ID() string { return c.id }
 
-func (c *check_6_3) Requirements() checker.CheckRequirements {
+func (c *contextParamCheck) Requirements() checker.CheckRequirements {
 	return checker.CheckRequirements{SQLOnly: true}
 }
 
-func (c *check_6_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
+func (c *contextParamCheck) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
-		"SELECT name, setting FROM pg_settings WHERE context = 'postmaster' ORDER BY name")
+		"SELECT name, setting FROM pg_settings WHERE context = $1 ORDER BY name", c.context)
 	if err != nil {
-		return nil, fmt.Errorf("query postmaster parameters: %w", err)
+		return nil, fmt.Errorf("query %s parameters: %w", c.context, err)
 	}
 	defer rows.Close()
 
@@ -127,145 +130,7 @@ func (c *check_6_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d postmaster context parameters. Review for appropriate configuration.", count),
-	})
-
-	return result, nil
-}
-
-// check_6_4 - SIGHUP runtime parameters
-type check_6_4 struct{}
-
-func (c *check_6_4) ID() string { return "6.4" }
-
-func (c *check_6_4) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
-
-func (c *check_6_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	rows, err := env.DB.Query(ctx,
-		"SELECT name, setting FROM pg_settings WHERE context = 'sighup' ORDER BY name")
-	if err != nil {
-		return nil, fmt.Errorf("query sighup parameters: %w", err)
-	}
-	defer rows.Close()
-
-	result := &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-	}
-
-	details := [][]string{{"Parameter", "Value"}}
-	count := 0
-	for rows.Next() {
-		var name, setting string
-		if err := rows.Scan(&name, &setting); err != nil {
-			return nil, fmt.Errorf("scan parameter: %w", err)
-		}
-		details = append(details, []string{name, setting})
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate parameters: %w", err)
-	}
-
-	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d sighup context parameters. Review for appropriate configuration.", count),
-	})
-
-	return result, nil
-}
-
-// check_6_5 - Superuser runtime parameters
-type check_6_5 struct{}
-
-func (c *check_6_5) ID() string { return "6.5" }
-
-func (c *check_6_5) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
-
-func (c *check_6_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	rows, err := env.DB.Query(ctx,
-		"SELECT name, setting FROM pg_settings WHERE context = 'superuser' ORDER BY name")
-	if err != nil {
-		return nil, fmt.Errorf("query superuser parameters: %w", err)
-	}
-	defer rows.Close()
-
-	result := &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-	}
-
-	details := [][]string{{"Parameter", "Value"}}
-	count := 0
-	for rows.Next() {
-		var name, setting string
-		if err := rows.Scan(&name, &setting); err != nil {
-			return nil, fmt.Errorf("scan parameter: %w", err)
-		}
-		details = append(details, []string{name, setting})
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate parameters: %w", err)
-	}
-
-	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d superuser context parameters. Review for appropriate configuration.", count),
-	})
-
-	return result, nil
-}
-
-// check_6_6 - User runtime parameters
-type check_6_6 struct{}
-
-func (c *check_6_6) ID() string { return "6.6" }
-
-func (c *check_6_6) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
-
-func (c *check_6_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	rows, err := env.DB.Query(ctx,
-		"SELECT name, setting FROM pg_settings WHERE context = 'user' ORDER BY name")
-	if err != nil {
-		return nil, fmt.Errorf("query user parameters: %w", err)
-	}
-	defer rows.Close()
-
-	result := &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-	}
-
-	details := [][]string{{"Parameter", "Value"}}
-	count := 0
-	for rows.Next() {
-		var name, setting string
-		if err := rows.Scan(&name, &setting); err != nil {
-			return nil, fmt.Errorf("scan parameter: %w", err)
-		}
-		details = append(details, []string{name, setting})
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate parameters: %w", err)
-	}
-
-	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d user context parameters. Review for appropriate configuration.", count),
-	})
+	result.Info(fmt.Sprintf("Found %d %s context parameters. Review for appropriate configuration.", count, c.context))
 
 	return result, nil
 }
@@ -328,28 +193,16 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if sslOn != "on" {
 		failed = true
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("ssl is '%s' (should be 'on').", sslOn),
-		})
+		result.Critical(fmt.Sprintf("ssl is '%s' (should be 'on').", sslOn))
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "ssl is enabled.",
-		})
+		result.Info("ssl is enabled.")
 	}
 
 	if sslMinVersion != "TLSv1.2" && sslMinVersion != "TLSv1.3" {
 		failed = true
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("ssl_min_protocol_version is '%s' (should be 'TLSv1.2' or 'TLSv1.3').", sslMinVersion),
-		})
+		result.Warn(fmt.Sprintf("ssl_min_protocol_version is '%s' (should be 'TLSv1.2' or 'TLSv1.3').", sslMinVersion))
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("ssl_min_protocol_version is '%s'.", sslMinVersion),
-		})
+		result.Info(fmt.Sprintf("ssl_min_protocol_version is '%s'.", sslMinVersion))
 	}
 
 	if sslPassCmd != "" {
@@ -412,15 +265,9 @@ func (c *check_6_9) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if count > 0 {
 		result.Details = details
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("Found %d cryptographic extensions available. Review installation status.", count),
-		})
+		result.Info(fmt.Sprintf("Found %d cryptographic extensions available. Review installation status.", count))
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: "No cryptographic extensions (pgcrypto, pgsodium) found in available extensions.",
-		})
+		result.Info("No cryptographic extensions (pgcrypto, pgsodium) found in available extensions.")
 	}
 
 	return result, nil

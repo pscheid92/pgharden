@@ -134,7 +134,6 @@ func (c *check_4_4) Run(ctx context.Context, env *checker.Environment) (*checker
 		Status:   checker.StatusManual,
 		Severity: checker.SeverityInfo,
 	}
-
 	details := [][]string{{"Role", "Connection Limit"}}
 	count := 0
 	for rows.Next() {
@@ -155,10 +154,7 @@ func (c *check_4_4) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d login roles (excluding superusers). Review for appropriate access.", count),
-	})
+	result.Info(fmt.Sprintf("Found %d login roles (excluding superusers). Review for appropriate access.", count))
 
 	return result, nil
 }
@@ -267,10 +263,7 @@ func (c *check_4_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	} else {
 		result.Status = checker.StatusManual
 		result.Details = details
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("Found %d DML privilege grants to non-superuser roles. Review for necessity.", count),
-		})
+		result.Info(fmt.Sprintf("Found %d DML privilege grants to non-superuser roles. Review for necessity.", count))
 	}
 
 	return result, nil
@@ -323,10 +316,7 @@ func (c *check_4_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	if count > 0 {
 		result.Details = details
 	}
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d tables with Row Level Security enabled. Review policies.", count),
-	})
+	result.Info(fmt.Sprintf("Found %d tables with Row Level Security enabled. Review policies.", count))
 
 	return result, nil
 }
@@ -389,10 +379,7 @@ func (c *check_4_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	result.Details = details
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d roles in the privilege hierarchy. Review for least-privilege compliance.", count),
-	})
+	result.Info(fmt.Sprintf("Found %d roles in the privilege hierarchy. Review for least-privilege compliance.", count))
 
 	return result, nil
 }

@@ -55,9 +55,7 @@ type check_3_2 struct{}
 
 func (c *check_3_2) ID() string { return "3.2" }
 
-func (c *check_3_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
+func (c *check_3_2) Requirements() checker.CheckRequirements { return sqlOnly }
 
 func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	val, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
@@ -80,7 +78,7 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		return result, nil
 	}
 
-	result.Messages = append(result.Messages, checker.Message{Level: checker.LevelSuccess, Content: "pgaudit is in shared_preload_libraries"})
+	result.Info("pgaudit is in shared_preload_libraries")
 
 	auditLog, err := checker.ShowSetting(ctx, env.DB, "pgaudit.log")
 	if err != nil {
@@ -102,9 +100,7 @@ type check_3_1_22 struct{}
 
 func (c *check_3_1_22) ID() string { return "3.1.22" }
 
-func (c *check_3_1_22) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
-}
+func (c *check_3_1_22) Requirements() checker.CheckRequirements { return sqlOnly }
 
 func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	val, err := checker.ShowSetting(ctx, env.DB, "log_line_prefix")

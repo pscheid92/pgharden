@@ -41,13 +41,7 @@ func (c *check_1_1) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	return &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-		Messages: []checker.Message{
-			{Level: "INFO", Content: "Manually verify that PostgreSQL packages are obtained from authorized repositories"},
-		},
-	}, nil
+	return checker.ManualResult("Manually verify that PostgreSQL packages are obtained from authorized repositories"), nil
 }
 
 // check_1_2 — 1.2: Verify PostgreSQL systemd service is enabled
@@ -116,13 +110,7 @@ func (c *check_1_5) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	return &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-		Messages: []checker.Message{
-			{Level: "INFO", Content: "Manually verify PostgreSQL is at the latest available version. Running: " + env.PGVersionFull},
-		},
-	}, nil
+	return checker.ManualResult("Manually verify PostgreSQL is at the latest available version. Running: " + env.PGVersionFull), nil
 }
 
 // check_1_6 — 1.6: Verify PGPASSWORD is not set in shell profiles
@@ -324,12 +312,7 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 
 	// Try RPM-based check
 	if env.Commands["rpm"] {
-		result.Status = checker.StatusManual
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: "RPM-based system detected; manually run: rpm -qa | grep pgdg",
-		})
-		return result, nil
+		return checker.ManualResult("RPM-based system detected; manually run: rpm -qa | grep pgdg"), nil
 	}
 
 	// Try DEB-based check
@@ -352,12 +335,7 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 		}
 	}
 
-	result.Status = checker.StatusManual
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: "Unable to determine repository source; manually verify PGDG repository is configured",
-	})
-	return result, nil
+	return checker.ManualResult("Unable to determine repository source; manually verify PGDG repository is configured"), nil
 }
 
 // check_1_4_1 — 1.4.1: Verify PG_VERSION matches running version
@@ -430,10 +408,7 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 		}
 	} else {
 		result.Status = checker.StatusManual
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("Cannot parse server_version_num: %s; PG_VERSION file says %s", serverVersion, fileVersion),
-		})
+		result.Info(fmt.Sprintf("Cannot parse server_version_num: %s; PG_VERSION file says %s", serverVersion, fileVersion))
 	}
 
 	return result, nil
@@ -510,11 +485,5 @@ func (c *check_1_4_5) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_1_4_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	return &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-		Messages: []checker.Message{
-			{Level: "INFO", Content: "Manually audit the storage type used for PostgreSQL data (SSD, SAN, NFS, etc.)"},
-		},
-	}, nil
+	return checker.ManualResult("Manually audit the storage type used for PostgreSQL data (SSD, SAN, NFS, etc.)"), nil
 }

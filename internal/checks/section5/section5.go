@@ -144,11 +144,7 @@ func (c *check_5_3) Requirements() checker.CheckRequirements {
 
 func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityCritical,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
@@ -164,10 +160,7 @@ func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		switch sec {
 		case hba.AuthForbidden:
 			hasFail = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "CRITICAL",
-				Content: fmt.Sprintf("Line %d: local connection uses insecure auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User),
-			})
+			result.Critical(fmt.Sprintf("Line %d: local connection uses insecure auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User))
 		case hba.AuthWeak:
 			hasWarn = true
 			result.Warn(fmt.Sprintf("Line %d: local connection uses weak auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User))
@@ -200,11 +193,7 @@ func (c *check_5_4) Requirements() checker.CheckRequirements {
 
 func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityCritical,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
@@ -220,10 +209,7 @@ func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker
 		switch sec {
 		case hba.AuthForbidden:
 			hasFail = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "CRITICAL",
-				Content: fmt.Sprintf("Line %d: host connection uses insecure auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address),
-			})
+			result.Critical(fmt.Sprintf("Line %d: host connection uses insecure auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address))
 		case hba.AuthWeak:
 			hasWarn = true
 			result.Warn(fmt.Sprintf("Line %d: host connection uses weak auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address))
@@ -256,34 +242,25 @@ func (c *check_5_5) Requirements() checker.CheckRequirements {
 
 func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	rows, err := env.DB.Query(ctx,
-		"SELECT rolname, rolconnlimit FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1")
+		"SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1")
 	if err != nil {
 		return nil, fmt.Errorf("query connection limits: %w", err)
 	}
-	defer rows.Close()
+	names, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		return nil, fmt.Errorf("scan roles: %w", err)
+	}
 
 	result := checker.NewResult(checker.SeverityWarning)
 
-	details := [][]string{{"Role", "Connection Limit"}}
-	count := 0
-	for rows.Next() {
-		var name string
-		var connLimit int
-		if err := rows.Scan(&name, &connLimit); err != nil {
-			return nil, fmt.Errorf("scan role: %w", err)
-		}
-		details = append(details, []string{name, "unlimited"})
-		count++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate roles: %w", err)
-	}
-
-	if count == 0 {
+	if len(names) == 0 {
 		result.Pass("All login roles have connection limits configured.")
 	} else {
-		result.Details = details
-		result.FailWarn(fmt.Sprintf("Found %d login roles with no connection limit set.", count))
+		result.Details = [][]string{{"Role", "Connection Limit"}}
+		for _, name := range names {
+			result.Details = append(result.Details, []string{name, "unlimited"})
+		}
+		result.FailWarn(fmt.Sprintf("Found %d login roles with no connection limit set.", len(names)))
 	}
 
 	return result, nil
@@ -364,20 +341,14 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		failed = true
 		result.Warn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("authentication_timeout is %ds.", timeoutSec),
-		})
+		result.Info(fmt.Sprintf("authentication_timeout is %ds.", timeoutSec))
 	}
 
 	if !hasAuthDelay {
 		failed = true
 		result.Warn("auth_delay is not loaded in shared_preload_libraries.")
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "auth_delay is loaded in shared_preload_libraries.",
-		})
+		result.Info("auth_delay is loaded in shared_preload_libraries.")
 	}
 
 	if failed {
@@ -403,11 +374,7 @@ func (c *check_5_8) Requirements() checker.CheckRequirements {
 
 func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityCritical,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	result := checker.NewResult(checker.SeverityCritical)
@@ -431,10 +398,7 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 		}
 
 		hasFail = true
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("Line %d: plain 'host' connection without SSL/GSSENC (db=%s, user=%s, addr=%s, method=%s)", entry.LineNumber, entry.Database, entry.User, addr, entry.Method),
-		})
+		result.Critical(fmt.Sprintf("Line %d: plain 'host' connection without SSL/GSSENC (db=%s, user=%s, addr=%s, method=%s)", entry.LineNumber, entry.Database, entry.User, addr, entry.Method))
 	}
 
 	if hasFail {
@@ -459,11 +423,7 @@ func (c *check_5_9) Requirements() checker.CheckRequirements {
 
 func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityCritical,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	result := checker.NewResult(checker.SeverityWarning)
@@ -486,10 +446,7 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 		// Check for all-addresses patterns
 		if addr == "0.0.0.0/0" || addr == "::/0" || addr == "all" {
 			hasCritical = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "CRITICAL",
-				Content: fmt.Sprintf("Line %d: unrestricted network range '%s' (db=%s, user=%s)", entry.LineNumber, addr, entry.Database, entry.User),
-			})
+			result.Critical(fmt.Sprintf("Line %d: unrestricted network range '%s' (db=%s, user=%s)", entry.LineNumber, addr, entry.Database, entry.User))
 			continue
 		}
 
@@ -530,11 +487,7 @@ func (c *check_5_10) Requirements() checker.CheckRequirements {
 
 func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityWarning,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	result := checker.NewResult(checker.SeverityWarning)
@@ -578,11 +531,7 @@ func (c *check_5_11) Requirements() checker.CheckRequirements {
 
 func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	if err := ensureHBA(ctx, env); err != nil {
-		return &checker.CheckResult{
-			Status:     checker.StatusSkipped,
-			Severity:   checker.SeverityCritical,
-			SkipReason: "Cannot load pg_hba.conf: " + err.Error(),
-		}, nil
+		return checker.SkippedHBA(err), nil
 	}
 
 	// Load superuser list if not cached
@@ -619,16 +568,10 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 		if user == "all" {
 			// 'all' includes superusers
 			hasFail = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "CRITICAL",
-				Content: fmt.Sprintf("Line %d: user='all' allows superuser remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, entry.Type, entry.Address, entry.Method),
-			})
+			result.Critical(fmt.Sprintf("Line %d: user='all' allows superuser remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, entry.Type, entry.Address, entry.Method))
 		} else if superSet[user] {
 			hasFail = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "CRITICAL",
-				Content: fmt.Sprintf("Line %d: superuser '%s' has remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, user, entry.Type, entry.Address, entry.Method),
-			})
+			result.Critical(fmt.Sprintf("Line %d: superuser '%s' has remote access (type=%s, addr=%s, method=%s)", entry.LineNumber, user, entry.Type, entry.Address, entry.Method))
 		}
 	}
 

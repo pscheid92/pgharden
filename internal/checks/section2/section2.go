@@ -382,11 +382,5 @@ func (c *check_2_8) Requirements() checker.CheckRequirements {
 }
 
 func (c *check_2_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
-	return &checker.CheckResult{
-		Status:   checker.StatusManual,
-		Severity: checker.SeverityInfo,
-		Messages: []checker.Message{
-			{Level: "INFO", Content: "Manually verify that all files in " + env.DataDir + " are owned by the postgres OS user"},
-		},
-	}, nil
+	return checker.ManualResult("Manually verify that all files in " + env.DataDir + " are owned by the postgres OS user"), nil
 }
