@@ -52,11 +52,7 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	if len(replUsers) == 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "No dedicated replication user found (no roles with REPLICATION privilege)",
-		})
+		result.Fail("FAILURE", "No dedicated replication user found (no roles with REPLICATION privilege)")
 		return result, nil
 	}
 
@@ -80,17 +76,9 @@ func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	result.Details = details
 
 	if hasDedicated {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Dedicated replication user(s) found",
-		})
+		result.Pass("Dedicated replication user(s) found")
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Only superuser accounts have REPLICATION privilege; a dedicated replication user should be created",
-		})
+		result.Fail("FAILURE", "Only superuser accounts have REPLICATION privilege; a dedicated replication user should be created")
 	}
 	return result, nil
 }
@@ -129,17 +117,9 @@ func (c *check_7_4) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	archiveMode, ok := settings["archive_mode"]
 	if !ok || archiveMode == "off" {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "archive_mode is not enabled",
-		})
+		result.Fail("FAILURE", "archive_mode is not enabled")
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "archive_mode is '" + archiveMode + "'",
-		})
+		result.Pass("archive_mode is '" + archiveMode + "'")
 	}
 	return result, nil
 }
@@ -184,11 +164,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		if key == "sslmode" {
 			hasSSLMode = true
 			if value != "require" && value != "verify-ca" && value != "verify-full" {
-				result.Status = checker.StatusFail
-				result.Messages = append(result.Messages, checker.Message{
-					Level:   "FAILURE",
-					Content: "primary_conninfo sslmode is '" + value + "', expected 'require', 'verify-ca', or 'verify-full'",
-				})
+				result.Fail("FAILURE", "primary_conninfo sslmode is '"+value+"', expected 'require', 'verify-ca', or 'verify-full'")
 			} else {
 				result.Messages = append(result.Messages, checker.Message{
 					Level:   "SUCCESS",
@@ -199,10 +175,7 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		if key == "sslcompression" {
 			hasSSLCompression = true
 			if value != "1" {
-				result.Messages = append(result.Messages, checker.Message{
-					Level:   "WARNING",
-					Content: "primary_conninfo sslcompression is '" + value + "', expected '1'",
-				})
+				result.Warn("primary_conninfo sslcompression is '" + value + "', expected '1'")
 			} else {
 				result.Messages = append(result.Messages, checker.Message{
 					Level:   "SUCCESS",
@@ -213,18 +186,11 @@ func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if !hasSSLMode {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "primary_conninfo does not specify sslmode",
-		})
+		result.Fail("FAILURE", "primary_conninfo does not specify sslmode")
 	}
 
 	if !hasSSLCompression {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: "primary_conninfo does not specify sslcompression",
-		})
+		result.Warn("primary_conninfo does not specify sslcompression")
 	}
 
 	// Set overall status if not already failed

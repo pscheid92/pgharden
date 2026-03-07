@@ -64,17 +64,9 @@ func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker
 
 		shell := fields[6]
 		if noLoginShells[shell] {
-			result.Status = checker.StatusPass
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "SUCCESS",
-				Content: "postgres user has no interactive shell: " + shell,
-			})
+			result.Pass("postgres user has no interactive shell: " + shell)
 		} else {
-			result.Status = checker.StatusFail
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "FAILURE",
-				Content: "postgres user has interactive shell: " + shell + " (expected /bin/false or nologin)",
-			})
+			result.Fail("FAILURE", "postgres user has interactive shell: "+shell+" (expected /bin/false or nologin)")
 		}
 		return result, nil
 	}
@@ -116,21 +108,13 @@ func (c *check_4_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 
 	if len(superusers) <= 1 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Only the expected superuser account exists.",
-		})
+		result.Pass("Only the expected superuser account exists.")
 	} else {
-		result.Status = checker.StatusFail
 		result.Details = [][]string{{"Superuser Role"}}
 		for _, su := range superusers {
 			result.Details = append(result.Details, []string{su})
 		}
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("Found %d superuser roles; only 'postgres' should have superuser privileges.", len(superusers)),
-		})
+		result.Fail("WARNING", fmt.Sprintf("Found %d superuser roles; only 'postgres' should have superuser privileges.", len(superusers)))
 	}
 
 	return result, nil
@@ -238,18 +222,10 @@ func (c *check_4_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if count == 0 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "No SECURITY DEFINER functions found outside system schemas.",
-		})
+		result.Pass("No SECURITY DEFINER functions found outside system schemas.")
 	} else {
-		result.Status = checker.StatusFail
 		result.Details = details
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("Found %d functions with SECURITY DEFINER or custom config outside system schemas.", count),
-		})
+		result.Fail("WARNING", fmt.Sprintf("Found %d functions with SECURITY DEFINER or custom config outside system schemas.", count))
 	}
 
 	return result, nil
@@ -295,11 +271,7 @@ func (c *check_4_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if count == 0 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "No excessive DML privileges found.",
-		})
+		result.Pass("No excessive DML privileges found.")
 	} else {
 		result.Status = checker.StatusManual
 		result.Details = details
@@ -454,11 +426,7 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 
 	if nspacl == nil {
 		// NULL means default privileges (which includes CREATE for PUBLIC)
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: "Public schema has default privileges (NULL ACL), which grants CREATE to PUBLIC.",
-		})
+		result.Fail("WARNING", "Public schema has default privileges (NULL ACL), which grants CREATE to PUBLIC.")
 		return result, nil
 	}
 
@@ -480,17 +448,9 @@ func (c *check_4_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	if hasPublicCreate {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("Public schema grants CREATE to PUBLIC. ACL: %s", acl),
-		})
+		result.Fail("WARNING", fmt.Sprintf("Public schema grants CREATE to PUBLIC. ACL: %s", acl))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Public schema does not grant CREATE to PUBLIC.",
-		})
+		result.Pass("Public schema does not grant CREATE to PUBLIC.")
 	}
 
 	return result, nil

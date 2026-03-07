@@ -33,26 +33,14 @@ func (c *check_8_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	output := strings.TrimSpace(string(out))
 
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "pgBackRest info failed: " + output,
-		})
+		result.Fail("FAILURE", "pgBackRest info failed: "+output)
 		return result, nil
 	}
 
 	if strings.Contains(output, "stanza:") || strings.Contains(output, "status:") {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "pgBackRest is configured with active stanza(s)",
-		})
+		result.Pass("pgBackRest is configured with active stanza(s)")
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "pgBackRest is installed but no stanzas found",
-		})
+		result.Fail("FAILURE", "pgBackRest is installed but no stanzas found")
 	}
 	return result, nil
 }

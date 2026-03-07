@@ -82,17 +82,9 @@ func (c *check_6_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	result.Details = details
 
 	if failed {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: "One or more backend runtime parameters have insecure values.",
-		})
+		result.Fail("WARNING", "One or more backend runtime parameters have insecure values.")
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All checked backend runtime parameters have secure values.",
-		})
+		result.Pass("All checked backend runtime parameters have secure values.")
 	}
 
 	return result, nil
@@ -294,26 +286,14 @@ func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	output := strings.TrimSpace(string(out))
 
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "FIPS mode check failed: " + output,
-		})
+		result.Fail("FAILURE", "FIPS mode check failed: "+output)
 		return result, nil
 	}
 
 	if strings.Contains(strings.ToLower(output), "enabled") {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "FIPS mode is enabled: " + output,
-		})
+		result.Pass("FIPS mode is enabled: " + output)
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "FIPS mode is not enabled: " + output,
-		})
+		result.Fail("FAILURE", "FIPS mode is not enabled: "+output)
 	}
 	return result, nil
 }
@@ -375,10 +355,7 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if sslPassCmd != "" {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("ssl_passphrase_command is configured: '%s'.", sslPassCmd),
-		})
+		result.Info(fmt.Sprintf("ssl_passphrase_command is configured: '%s'.", sslPassCmd))
 	}
 
 	if failed {
@@ -494,22 +471,14 @@ func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checke
 	}
 
 	if len(disallowed) == 0 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All configured SSL ciphers are in the allowed list.",
-		})
+		result.Pass("All configured SSL ciphers are in the allowed list.")
 	} else {
-		result.Status = checker.StatusFail
 		details := [][]string{{"Disallowed Cipher"}}
 		for _, c := range disallowed {
 			details = append(details, []string{c})
 		}
 		result.Details = details
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("Found %d disallowed SSL ciphers. Only strong cipher suites should be used.", len(disallowed)),
-		})
+		result.Fail("WARNING", fmt.Sprintf("Found %d disallowed SSL ciphers. Only strong cipher suites should be used.", len(disallowed)))
 	}
 
 	return result, nil
@@ -538,21 +507,13 @@ func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checke
 	hasPgAnonymize := strings.Contains(libsLower, "pg_anonymize")
 
 	if hasAnon || hasPgAnonymize {
-		result.Status = checker.StatusPass
 		found := "anon"
 		if hasPgAnonymize {
 			found = "pg_anonymize"
 		}
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("Data anonymization extension '%s' is configured in session_preload_libraries.", found),
-		})
+		result.Pass(fmt.Sprintf("Data anonymization extension '%s' is configured in session_preload_libraries.", found))
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("No data anonymization extension found in session_preload_libraries ('%s'). Consider installing 'anon' or 'pg_anonymize'.", libs),
-		})
+		result.Fail("INFO", fmt.Sprintf("No data anonymization extension found in session_preload_libraries ('%s'). Consider installing 'anon' or 'pg_anonymize'.", libs))
 	}
 
 	return result, nil

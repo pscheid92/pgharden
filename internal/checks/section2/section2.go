@@ -45,27 +45,15 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	out, err := exec.CommandContext(ctx, "sh", "-c", "umask").CombinedOutput()
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Cannot determine umask: " + err.Error(),
-		})
+		result.Fail("FAILURE", "Cannot determine umask: "+err.Error())
 		return result, nil
 	}
 
 	umask := strings.TrimSpace(string(out))
 	if umask == "0077" || umask == "077" {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "umask is set correctly: " + umask,
-		})
+		result.Pass("umask is set correctly: " + umask)
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "umask is " + umask + " (expected 0077)",
-		})
+		result.Fail("FAILURE", "umask is "+umask+" (expected 0077)")
 	}
 	return result, nil
 }
@@ -128,16 +116,11 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Status = checker.StatusFail
 		for _, p := range problems {
-			result.Messages = append(result.Messages, checker.Message{Level: "FAILURE", Content: p})
+			result.Fail("FAILURE", p)
 		}
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Extension directory permissions are correct for: " + dynPath,
-		})
+		result.Pass("Extension directory permissions are correct for: " + dynPath)
 	}
 	return result, nil
 }
@@ -203,17 +186,9 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: ".psql_history exists and is not linked to /dev/null: " + strings.Join(problems, ", "),
-		})
+		result.Fail("FAILURE", ".psql_history exists and is not linked to /dev/null: "+strings.Join(problems, ", "))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "No unprotected .psql_history files found",
-		})
+		result.Pass("No unprotected .psql_history files found")
 	}
 	return result, nil
 }
@@ -260,17 +235,9 @@ func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: "Passwords found in .pg_service.conf: " + strings.Join(problems, ", "),
-		})
+		result.Fail("CRITICAL", "Passwords found in .pg_service.conf: "+strings.Join(problems, ", "))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "No passwords found in .pg_service.conf files",
-		})
+		result.Pass("No passwords found in .pg_service.conf files")
 	}
 	return result, nil
 }
@@ -308,28 +275,16 @@ func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	info, err := os.Stat(hbaFile)
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Cannot stat pg_hba.conf: " + err.Error(),
-		})
+		result.Fail("FAILURE", "Cannot stat pg_hba.conf: "+err.Error())
 		return result, nil
 	}
 
 	perm := info.Mode().Perm()
 	// Acceptable: 0600 (-rw-------) or 0640 (-rw-r-----)
 	if perm == 0600 || perm == 0640 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("pg_hba.conf permissions are restrictive: %04o", perm),
-		})
+		result.Pass(fmt.Sprintf("pg_hba.conf permissions are restrictive: %04o", perm))
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("pg_hba.conf has overly permissive mode: %04o (expected 0600 or 0640)", perm),
-		})
+		result.Fail("CRITICAL", fmt.Sprintf("pg_hba.conf has overly permissive mode: %04o (expected 0600 or 0640)", perm))
 	}
 	return result, nil
 }
@@ -375,16 +330,11 @@ func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Status = checker.StatusFail
 		for _, p := range problems {
-			result.Messages = append(result.Messages, checker.Message{Level: "FAILURE", Content: p})
+			result.Fail("FAILURE", p)
 		}
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Unix socket directory permissions are acceptable: " + sockDirs,
-		})
+		result.Pass("Unix socket directory permissions are acceptable: " + sockDirs)
 	}
 	return result, nil
 }
@@ -406,27 +356,15 @@ func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	info, err := os.Stat(env.DataDir)
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Cannot stat PGDATA directory: " + err.Error(),
-		})
+		result.Fail("FAILURE", "Cannot stat PGDATA directory: "+err.Error())
 		return result, nil
 	}
 
 	perm := info.Mode().Perm()
 	if perm == 0700 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("PGDATA permissions are correct: %04o", perm),
-		})
+		result.Pass(fmt.Sprintf("PGDATA permissions are correct: %04o", perm))
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("PGDATA has incorrect permissions: %04o (expected 0700)", perm),
-		})
+		result.Fail("CRITICAL", fmt.Sprintf("PGDATA has incorrect permissions: %04o (expected 0700)", perm))
 	}
 	return result, nil
 }

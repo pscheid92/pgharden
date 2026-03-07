@@ -88,21 +88,13 @@ func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(found) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: "Password(s) found in process listings",
-		})
+		result.Fail("CRITICAL", "Password(s) found in process listings")
 		result.Details = [][]string{{"Process"}}
 		for _, f := range found {
 			result.Details = append(result.Details, []string{f})
 		}
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "No passwords found in process listings",
-		})
+		result.Pass("No passwords found in process listings")
 	}
 	return result, nil
 }
@@ -129,17 +121,9 @@ func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	if listenAddr == "*" || listenAddr == "0.0.0.0" {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr),
-		})
+		result.Fail("CRITICAL", fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("listen_addresses is set to '%s'.", listenAddr),
-		})
+		result.Pass(fmt.Sprintf("listen_addresses is set to '%s'.", listenAddr))
 	}
 
 	return result, nil
@@ -185,10 +169,7 @@ func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker
 			})
 		case hba.AuthWeak:
 			hasWarn = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: fmt.Sprintf("Line %d: local connection uses weak auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User),
-			})
+			result.Warn(fmt.Sprintf("Line %d: local connection uses weak auth '%s' (db=%s, user=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User))
 		}
 	}
 
@@ -199,11 +180,7 @@ func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Status = checker.StatusFail
 		result.Severity = checker.SeverityWarning
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All local connections use secure authentication",
-		})
+		result.Pass("All local connections use secure authentication")
 	}
 	return result, nil
 }
@@ -248,10 +225,7 @@ func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker
 			})
 		case hba.AuthWeak:
 			hasWarn = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: fmt.Sprintf("Line %d: host connection uses weak auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address),
-			})
+			result.Warn(fmt.Sprintf("Line %d: host connection uses weak auth '%s' (db=%s, user=%s, addr=%s)", entry.LineNumber, entry.Method, entry.Database, entry.User, entry.Address))
 		}
 	}
 
@@ -262,11 +236,7 @@ func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Status = checker.StatusFail
 		result.Severity = checker.SeverityWarning
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All host connections use secure authentication",
-		})
+		result.Pass("All host connections use secure authentication")
 	}
 	return result, nil
 }
@@ -309,18 +279,10 @@ func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if count == 0 {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All login roles have connection limits configured.",
-		})
+		result.Pass("All login roles have connection limits configured.")
 	} else {
-		result.Status = checker.StatusFail
 		result.Details = details
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("Found %d login roles with no connection limit set.", count),
-		})
+		result.Fail("WARNING", fmt.Sprintf("Found %d login roles with no connection limit set.", count))
 	}
 
 	return result, nil
@@ -352,21 +314,13 @@ func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	hasPasswordcheck := strings.Contains(libsLower, "passwordcheck")
 
 	if hasCredcheck || hasPasswordcheck {
-		result.Status = checker.StatusPass
 		found := "credcheck"
 		if hasPasswordcheck {
 			found = "passwordcheck"
 		}
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("Password complexity module '%s' is loaded in shared_preload_libraries.", found),
-		})
+		result.Pass(fmt.Sprintf("Password complexity module '%s' is loaded in shared_preload_libraries.", found))
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("No password complexity module found in shared_preload_libraries ('%s'). Install 'credcheck' or 'passwordcheck'.", libs),
-		})
+		result.Fail("WARNING", fmt.Sprintf("No password complexity module found in shared_preload_libraries ('%s'). Install 'credcheck' or 'passwordcheck'.", libs))
 	}
 
 	return result, nil
@@ -410,10 +364,7 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if timeoutSec > 60 {
 		failed = true
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec),
-		})
+		result.Warn(fmt.Sprintf("authentication_timeout is %ds (should be <= 60s).", timeoutSec))
 	} else {
 		result.Messages = append(result.Messages, checker.Message{
 			Level:   "SUCCESS",
@@ -423,10 +374,7 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	if !hasAuthDelay {
 		failed = true
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "WARNING",
-			Content: "auth_delay is not loaded in shared_preload_libraries.",
-		})
+		result.Warn("auth_delay is not loaded in shared_preload_libraries.")
 	} else {
 		result.Messages = append(result.Messages, checker.Message{
 			Level:   "SUCCESS",
@@ -494,11 +442,7 @@ func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	if hasFail {
 		result.Status = checker.StatusFail
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All non-local host connections use SSL or GSSENC",
-		})
+		result.Pass("All non-local host connections use SSL or GSSENC")
 	}
 	return result, nil
 }
@@ -564,10 +508,7 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 
 		if size > 65536 {
 			hasWarning = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: fmt.Sprintf("Line %d: large CIDR range '%s' covers %d addresses (db=%s, user=%s)", entry.LineNumber, cidr, size, entry.Database, entry.User),
-			})
+			result.Warn(fmt.Sprintf("Line %d: large CIDR range '%s' covers %d addresses (db=%s, user=%s)", entry.LineNumber, cidr, size, entry.Database, entry.User))
 		}
 	}
 
@@ -578,11 +519,7 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 		result.Status = checker.StatusFail
 		result.Severity = checker.SeverityWarning
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All CIDR ranges are appropriately scoped",
-		})
+		result.Pass("All CIDR ranges are appropriately scoped")
 	}
 	return result, nil
 }
@@ -619,28 +556,18 @@ func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checke
 
 		if entry.Database == "all" {
 			hasWarning = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: fmt.Sprintf("Line %d: database='all' is overly broad (user=%s, type=%s, method=%s)", entry.LineNumber, entry.User, entry.Type, entry.Method),
-			})
+			result.Warn(fmt.Sprintf("Line %d: database='all' is overly broad (user=%s, type=%s, method=%s)", entry.LineNumber, entry.User, entry.Type, entry.Method))
 		}
 		if entry.User == "all" {
 			hasWarning = true
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: fmt.Sprintf("Line %d: user='all' is overly broad (db=%s, type=%s, method=%s)", entry.LineNumber, entry.Database, entry.Type, entry.Method),
-			})
+			result.Warn(fmt.Sprintf("Line %d: user='all' is overly broad (db=%s, type=%s, method=%s)", entry.LineNumber, entry.Database, entry.Type, entry.Method))
 		}
 	}
 
 	if hasWarning {
 		result.Status = checker.StatusFail
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "All HBA entries specify explicit databases and users",
-		})
+		result.Pass("All HBA entries specify explicit databases and users")
 	}
 	return result, nil
 }
@@ -723,11 +650,7 @@ func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checke
 	if hasFail {
 		result.Status = checker.StatusFail
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Superuser connections are restricted to local access only",
-		})
+		result.Pass("Superuser connections are restricted to local access only")
 	}
 	return result, nil
 }
@@ -754,17 +677,9 @@ func (c *check_5_12) Run(ctx context.Context, env *checker.Environment) (*checke
 	result := &checker.CheckResult{Severity: checker.SeverityCritical}
 
 	if passEnc == "scram-sha-256" {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "password_encryption is set to 'scram-sha-256'.",
-		})
+		result.Pass("password_encryption is set to 'scram-sha-256'.")
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("password_encryption is set to '%s' (should be 'scram-sha-256').", passEnc),
-		})
+		result.Fail("CRITICAL", fmt.Sprintf("password_encryption is set to '%s' (should be 'scram-sha-256').", passEnc))
 	}
 
 	return result, nil

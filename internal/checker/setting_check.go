@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-// SettingCheck is a data-driven Check implementation for PostgreSQL setting comparisons.
-// It queries a setting via SHOW and compares the result against an expected value.
 type SettingCheck struct {
 	CheckID    string
 	Setting    string            // PostgreSQL setting name (used in SHOW <setting>)
@@ -20,9 +18,13 @@ type SettingCheck struct {
 	FailureMsg string            // Custom failure message (optional; auto-generated if empty)
 }
 
-func (c *SettingCheck) ID() string { return c.CheckID }
+func (c *SettingCheck) ID() string {
+	return c.CheckID
+}
 
-func (c *SettingCheck) Requirements() CheckRequirements { return c.Reqs }
+func (c *SettingCheck) Requirements() CheckRequirements {
+	return c.Reqs
+}
 
 func (c *SettingCheck) Run(ctx context.Context, env *Environment) (*CheckResult, error) {
 	val, err := ShowSetting(ctx, env.DB, c.Setting)
@@ -36,20 +38,19 @@ func (c *SettingCheck) Run(ctx context.Context, env *Environment) (*CheckResult,
 	result := &CheckResult{Severity: c.Sev}
 
 	if c.compare(val) {
-		result.Status = StatusPass
 		msg := c.SuccessMsg
 		if msg == "" {
 			msg = fmt.Sprintf("%s is correctly set to '%s'", c.Setting, val)
 		}
-		result.Messages = append(result.Messages, Message{Level: "SUCCESS", Content: msg})
-	} else {
-		result.Status = StatusFail
-		msg := c.FailureMsg
-		if msg == "" {
-			msg = fmt.Sprintf("%s is '%s', expected '%s'", c.Setting, val, c.Expected)
-		}
-		result.Messages = append(result.Messages, Message{Level: "FAILURE", Content: msg})
+		result.Pass(msg)
+		return result, nil
 	}
+
+	msg := c.FailureMsg
+	if msg == "" {
+		msg = fmt.Sprintf("%s is '%s', expected '%s'", c.Setting, val, c.Expected)
+	}
+	result.Fail("FAILURE", msg)
 	return result, nil
 }
 

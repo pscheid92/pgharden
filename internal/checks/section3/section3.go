@@ -76,11 +76,7 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if !hasPgAudit {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "pgaudit is not in shared_preload_libraries (current: '" + val + "')",
-		})
+		result.Fail("FAILURE", "pgaudit is not in shared_preload_libraries (current: '"+val+"')")
 		return result, nil
 	}
 
@@ -88,23 +84,14 @@ func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	auditLog, err := checker.ShowSetting(ctx, env.DB, "pgaudit.log")
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "pgaudit is loaded but pgaudit.log is not set: " + err.Error(),
-		})
+		result.Fail("FAILURE", "pgaudit is loaded but pgaudit.log is not set: "+err.Error())
 		return result, nil
 	}
 
 	if auditLog == "" || auditLog == "none" {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "pgaudit.log is set to '" + auditLog + "', should be configured for auditing",
-		})
+		result.Fail("FAILURE", "pgaudit.log is set to '"+auditLog+"', should be configured for auditing")
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{Level: "SUCCESS", Content: "pgaudit.log is set to: " + auditLog})
+		result.Pass("pgaudit.log is set to: " + auditLog)
 	}
 	return result, nil
 }
@@ -135,14 +122,9 @@ func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*chec
 
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 	if len(missing) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "log_line_prefix is missing: " + strings.Join(missing, ", ") + " (current: '" + val + "')",
-		})
+		result.Fail("FAILURE", "log_line_prefix is missing: "+strings.Join(missing, ", ")+" (current: '"+val+"')")
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{Level: "SUCCESS", Content: "log_line_prefix contains all required tokens: " + val})
+		result.Pass("log_line_prefix contains all required tokens: " + val)
 	}
 	return result, nil
 }

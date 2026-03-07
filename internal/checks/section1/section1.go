@@ -70,28 +70,16 @@ func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		out2, err2 := exec.CommandContext(ctx, "bash", "-c", "systemctl is-enabled postgresql*").CombinedOutput()
 		output2 := strings.TrimSpace(string(out2))
 		if err2 != nil || !strings.Contains(output2, "enabled") {
-			result.Status = checker.StatusFail
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "FAILURE",
-				Content: "PostgreSQL systemd service is not enabled: " + output,
-			})
+			result.Fail("FAILURE", "PostgreSQL systemd service is not enabled: "+output)
 			return result, nil
 		}
 		output = output2
 	}
 
 	if strings.Contains(output, "enabled") {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "PostgreSQL systemd service is enabled",
-		})
+		result.Pass("PostgreSQL systemd service is enabled")
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "PostgreSQL systemd service is not enabled: " + output,
-		})
+		result.Fail("FAILURE", "PostgreSQL systemd service is not enabled: "+output)
 	}
 	return result, nil
 }
@@ -110,19 +98,11 @@ func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	if _, err := os.Stat(pgVersionFile); err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "PG_VERSION file not found in PGDATA: " + pgVersionFile,
-		})
+		result.Fail("FAILURE", "PG_VERSION file not found in PGDATA: "+pgVersionFile)
 		return result, nil
 	}
 
-	result.Status = checker.StatusPass
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "SUCCESS",
-		Content: "Data cluster is initialized (PG_VERSION exists in " + env.DataDir + ")",
-	})
+	result.Pass("Data cluster is initialized (PG_VERSION exists in " + env.DataDir + ")")
 	return result, nil
 }
 
@@ -185,17 +165,9 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(found) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: "PGPASSWORD found in shell profile(s): " + strings.Join(found, ", "),
-		})
+		result.Fail("CRITICAL", "PGPASSWORD found in shell profile(s): "+strings.Join(found, ", "))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "PGPASSWORD not found in any checked shell profile",
-		})
+		result.Pass("PGPASSWORD not found in any checked shell profile")
 	}
 	return result, nil
 }
@@ -242,17 +214,9 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(pidsWithPassword) > 0 {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "CRITICAL",
-			Content: fmt.Sprintf("PGPASSWORD found in environment of %d process(es): PIDs %s", len(pidsWithPassword), strings.Join(pidsWithPassword, ", ")),
-		})
+		result.Fail("CRITICAL", fmt.Sprintf("PGPASSWORD found in environment of %d process(es): PIDs %s", len(pidsWithPassword), strings.Join(pidsWithPassword, ", ")))
 	} else {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "PGPASSWORD not found in any process environment",
-		})
+		result.Pass("PGPASSWORD not found in any process environment")
 	}
 	return result, nil
 }
@@ -296,10 +260,7 @@ func (c *check_1_8) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	result.Messages = append(result.Messages, checker.Message{
-		Level:   "INFO",
-		Content: fmt.Sprintf("Found %d installed extension(s); review for unauthorized extensions", count),
-	})
+	result.Info(fmt.Sprintf("Found %d installed extension(s); review for unauthorized extensions", count))
 	return result, nil
 }
 
@@ -342,15 +303,9 @@ func (c *check_1_9) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if count == 0 {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: "No custom tablespaces found",
-		})
+		result.Info("No custom tablespaces found")
 	} else {
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "INFO",
-			Content: fmt.Sprintf("Found %d custom tablespace(s); verify locations are secure", count),
-		})
+		result.Info(fmt.Sprintf("Found %d custom tablespace(s); verify locations are secure", count))
 	}
 	return result, nil
 }
@@ -385,22 +340,14 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 			for _, m := range matches {
 				names = append(names, filepath.Base(m))
 			}
-			result.Status = checker.StatusPass
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "SUCCESS",
-				Content: "PGDG repository files found: " + strings.Join(names, ", "),
-			})
+			result.Pass("PGDG repository files found: " + strings.Join(names, ", "))
 			return result, nil
 		}
 
 		// Check sources.list
 		data, err := os.ReadFile("/etc/apt/sources.list")
 		if err == nil && strings.Contains(string(data), "pgdg") {
-			result.Status = checker.StatusPass
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "SUCCESS",
-				Content: "PGDG repository found in /etc/apt/sources.list",
-			})
+			result.Pass("PGDG repository found in /etc/apt/sources.list")
 			return result, nil
 		}
 	}
@@ -428,11 +375,7 @@ func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*check
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Cannot read PG_VERSION file: " + err.Error(),
-		})
+		result.Fail("FAILURE", "Cannot read PG_VERSION file: "+err.Error())
 		return result, nil
 	}
 
@@ -440,17 +383,9 @@ func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*check
 	runningVersion := fmt.Sprintf("%d", env.PGVersion)
 
 	if fileVersion == runningVersion {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: fmt.Sprintf("PG_VERSION (%s) matches running version (%s)", fileVersion, runningVersion),
-		})
+		result.Pass(fmt.Sprintf("PG_VERSION (%s) matches running version (%s)", fileVersion, runningVersion))
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: fmt.Sprintf("PG_VERSION (%s) does not match running version (%s)", fileVersion, runningVersion),
-		})
+		result.Fail("FAILURE", fmt.Sprintf("PG_VERSION (%s) does not match running version (%s)", fileVersion, runningVersion))
 	}
 	return result, nil
 }
@@ -470,11 +405,7 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 	pgVersionFile := filepath.Join(env.DataDir, "PG_VERSION")
 	data, err := os.ReadFile(pgVersionFile)
 	if err != nil {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Cannot read PGDATA/PG_VERSION: " + err.Error(),
-		})
+		result.Fail("FAILURE", "Cannot read PGDATA/PG_VERSION: "+err.Error())
 		return result, nil
 	}
 
@@ -493,17 +424,9 @@ func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*check
 			major = serverVersion[:1]
 		}
 		if fileVersion == major {
-			result.Status = checker.StatusPass
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "SUCCESS",
-				Content: fmt.Sprintf("PGDATA/PG_VERSION (%s) is consistent with server version (%s)", fileVersion, serverVersion),
-			})
+			result.Pass(fmt.Sprintf("PGDATA/PG_VERSION (%s) is consistent with server version (%s)", fileVersion, serverVersion))
 		} else {
-			result.Status = checker.StatusFail
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "FAILURE",
-				Content: fmt.Sprintf("PGDATA/PG_VERSION (%s) is inconsistent with server_version_num (%s)", fileVersion, serverVersion),
-			})
+			result.Fail("FAILURE", fmt.Sprintf("PGDATA/PG_VERSION (%s) is inconsistent with server_version_num (%s)", fileVersion, serverVersion))
 		}
 	} else {
 		result.Status = checker.StatusManual
@@ -533,17 +456,9 @@ func (c *check_1_4_3) Run(ctx context.Context, env *checker.Environment) (*check
 
 	result := &checker.CheckResult{Severity: checker.SeverityWarning}
 	if val == "on" {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "Data checksums are enabled",
-		})
+		result.Pass("Data checksums are enabled")
 	} else {
-		result.Status = checker.StatusFail
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "FAILURE",
-			Content: "Data checksums are not enabled (current: " + val + ")",
-		})
+		result.Fail("FAILURE", "Data checksums are not enabled (current: "+val+")")
 	}
 	return result, nil
 }
@@ -572,23 +487,13 @@ func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*check
 	}
 
 	if walSymlink && tempTablespaces != "" {
-		result.Status = checker.StatusPass
-		result.Messages = append(result.Messages, checker.Message{
-			Level:   "SUCCESS",
-			Content: "pg_wal is on separate storage (symlink) and temp_tablespaces is set to: " + tempTablespaces,
-		})
+		result.Pass("pg_wal is on separate storage (symlink) and temp_tablespaces is set to: " + tempTablespaces)
 	} else {
 		if !walSymlink {
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: "pg_wal is not a symlink; WAL may not be on separate storage",
-			})
+			result.Warn("pg_wal is not a symlink; WAL may not be on separate storage")
 		}
 		if tempTablespaces == "" {
-			result.Messages = append(result.Messages, checker.Message{
-				Level:   "WARNING",
-				Content: "temp_tablespaces is not set; temporary files may not be on separate storage",
-			})
+			result.Warn("temp_tablespaces is not set; temporary files may not be on separate storage")
 		}
 		result.Status = checker.StatusFail
 	}

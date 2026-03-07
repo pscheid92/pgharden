@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+var ErrPermissionDenied = errors.New("permission denied")
+
 type Severity int
 
 const (
@@ -74,6 +76,24 @@ type CheckResult struct {
 type Message struct {
 	Level   string // SUCCESS, FAILURE, WARNING, CRITICAL, INFO
 	Content string
+}
+
+func (r *CheckResult) Pass(msg string) {
+	r.Status = StatusPass
+	r.Messages = append(r.Messages, Message{Level: "SUCCESS", Content: msg})
+}
+
+func (r *CheckResult) Fail(level, msg string) {
+	r.Status = StatusFail
+	r.Messages = append(r.Messages, Message{Level: level, Content: msg})
+}
+
+func (r *CheckResult) Info(msg string) {
+	r.Messages = append(r.Messages, Message{Level: "INFO", Content: msg})
+}
+
+func (r *CheckResult) Warn(msg string) {
+	r.Messages = append(r.Messages, Message{Level: "WARNING", Content: msg})
 }
 
 type Check interface {
@@ -151,5 +171,3 @@ func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error)
 func SkippedPermission(setting string) *CheckResult {
 	return &CheckResult{Status: StatusSkipped, SkipReason: "Insufficient privileges to read " + setting}
 }
-
-var ErrPermissionDenied = errors.New("permission denied")
