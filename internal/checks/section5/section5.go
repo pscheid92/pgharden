@@ -2,6 +2,7 @@ package section5
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -254,6 +255,9 @@ func (c *check_5_6) Requirements() checker.CheckRequirements {
 
 func (c *check_5_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	libs, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("shared_preload_libraries"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}
@@ -287,11 +291,17 @@ func (c *check_5_7) Requirements() checker.CheckRequirements {
 
 func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	authTimeout, err := checker.ShowSetting(ctx, env.DB, "authentication_timeout")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("authentication_timeout"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query authentication_timeout: %w", err)
 	}
 
 	libs, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("shared_preload_libraries"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query shared_preload_libraries: %w", err)
 	}

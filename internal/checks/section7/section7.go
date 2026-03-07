@@ -2,6 +2,7 @@ package section7
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 
@@ -122,6 +123,9 @@ func (c *check_7_5) Requirements() checker.CheckRequirements {
 
 func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	val, err := checker.ShowSetting(ctx, env.DB, "primary_conninfo")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("primary_conninfo"), nil
+	}
 	if err != nil {
 		return nil, err
 	}

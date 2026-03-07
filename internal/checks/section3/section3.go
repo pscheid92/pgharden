@@ -2,6 +2,7 @@ package section3
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/pgharden/pgharden/internal/checker"
@@ -56,6 +57,9 @@ func (c *check_3_2) Requirements() checker.CheckRequirements { return sqlOnly }
 
 func (c *check_3_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	val, err := checker.ShowSetting(ctx, env.DB, "shared_preload_libraries")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("shared_preload_libraries"), nil
+	}
 	if err != nil {
 		return nil, err
 	}

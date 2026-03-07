@@ -202,6 +202,9 @@ func ShowSetting(ctx context.Context, db DBQuerier, name string) (string, error)
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == "42501" {
 		return "", ErrPermissionDenied
 	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrPermissionDenied
+	}
 	if err != nil {
 		return "", err
 	}

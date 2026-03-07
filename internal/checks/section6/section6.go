@@ -2,6 +2,7 @@ package section6
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -169,16 +170,25 @@ func (c *check_6_8) Requirements() checker.CheckRequirements {
 
 func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	sslOn, err := checker.ShowSetting(ctx, env.DB, "ssl")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("ssl"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query ssl: %w", err)
 	}
 
 	sslMinVersion, err := checker.ShowSetting(ctx, env.DB, "ssl_min_protocol_version")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("ssl_min_protocol_version"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_min_protocol_version: %w", err)
 	}
 
 	sslPassCmd, err := checker.ShowSetting(ctx, env.DB, "ssl_passphrase_command")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("ssl_passphrase_command"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_passphrase_command: %w", err)
 	}
@@ -281,6 +291,9 @@ var allowedCiphers = map[string]bool{
 
 func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	ciphers, err := checker.ShowSetting(ctx, env.DB, "ssl_ciphers")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("ssl_ciphers"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query ssl_ciphers: %w", err)
 	}
@@ -322,6 +335,9 @@ func (c *check_6_11) Requirements() checker.CheckRequirements {
 
 func (c *check_6_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	libs, err := checker.ShowSetting(ctx, env.DB, "session_preload_libraries")
+	if errors.Is(err, checker.ErrPermissionDenied) {
+		return checker.SkippedPermission("session_preload_libraries"), nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query session_preload_libraries: %w", err)
 	}
