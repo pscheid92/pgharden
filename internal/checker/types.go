@@ -189,6 +189,11 @@ type Environment struct {
 	Superusers []string
 }
 
+// IsManagedCloud returns true if the platform is a managed cloud service (RDS or Aurora).
+func (e *Environment) IsManagedCloud() bool {
+	return e.Platform == PlatformRDS || e.Platform == PlatformAurora
+}
+
 func (e *Environment) ShouldCheckDB(db string) bool {
 	if len(e.AllowDatabases) > 0 {
 		return slices.Contains(e.AllowDatabases, db)

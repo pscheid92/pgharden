@@ -227,7 +227,7 @@ func (c *check_5_5) Requirements() checker.CheckRequirements {
 func (c *check_5_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	query := "SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolconnlimit = -1"
 	// On RDS/Aurora, exclude built-in managed roles
-	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+	if env.IsManagedCloud() {
 		query += " AND rolname NOT IN ('rdsadmin', 'rds_replication', 'rdsrepladmin')"
 	}
 
@@ -322,7 +322,7 @@ func (c *check_5_7) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	// On RDS/Aurora, auth_delay is not available as a preload library
-	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+	if env.IsManagedCloud() {
 		result.Info("auth_delay check skipped (not available on " + env.Platform + ")")
 		return result, nil
 	}

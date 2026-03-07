@@ -186,7 +186,7 @@ func (c *check_6_8) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	// On RDS/Aurora, SSL protocol version and passphrase are managed by AWS
-	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+	if env.IsManagedCloud() {
 		result.Info("ssl_min_protocol_version managed by AWS")
 		return result, nil
 	}
@@ -297,7 +297,7 @@ var allowedCiphers = map[string]bool{
 
 func (c *check_6_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	// On RDS/Aurora, cipher list is managed by AWS
-	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+	if env.IsManagedCloud() {
 		result := checker.NewResult(checker.SeverityWarning)
 		result.Pass("SSL cipher configuration is managed by AWS")
 		return result, nil

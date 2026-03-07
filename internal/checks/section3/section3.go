@@ -177,7 +177,7 @@ func (c *check_3_1_22) Run(ctx context.Context, env *checker.Environment) (*chec
 
 	// RDS/Aurora use their own log_line_prefix format with different tokens
 	required := []string{"%m", "%p", "%d", "%u", "%a", "%h"}
-	if env.Platform == checker.PlatformRDS || env.Platform == checker.PlatformAurora {
+	if env.IsManagedCloud() {
 		required = []string{"%t", "%r", "%u", "%d", "%p"}
 	}
 
