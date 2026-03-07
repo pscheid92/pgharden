@@ -12,7 +12,6 @@ user: auditor
 database: prod
 format: html
 output: report.html
-lang: en_US
 
 # Filtering
 include_checks: []           # Only run these check IDs (empty = all)
@@ -103,6 +102,23 @@ Use any standard PostgreSQL method:
 
 ## Output Formats
 
+Three formats are available: `text`, `json`, and `html`.
+
+When `-f` is not specified, the format is auto-detected:
+- **Terminal** (stdout is a TTY) → `text` with color
+- **File** (`-o report.json`) → `json`
+- **Pipe** (`pgharden | jq`) → `json`
+
+### Text
+
+```bash
+pgharden -H localhost -U postgres -d postgres
+```
+
+Human-readable colored output for terminal use. Each check shows a status prefix (`[PASS]`, `[FAIL]`, `[SKIP]`, `[MANUAL]`) followed by the check ID and title, with indented messages below. A summary line shows passed/failed/skipped/manual counts and failures by severity.
+
+Color is enabled by default when writing to a terminal. Disable with `--no-color` or the `NO_COLOR` environment variable.
+
 ### JSON
 
 ```bash
@@ -128,7 +144,7 @@ pgharden -f json | jq '.categories[].checks[] | select(.severity == "CRITICAL" a
 pgharden -f html -o report.html
 ```
 
-Self-contained single-file HTML with embedded CSS. No CDN dependencies. Collapsible sections, color-coded status badges, detail tables.
+Self-contained single-file HTML with embedded CSS and SVG icons. No CDN dependencies. Collapsible sections, color-coded status badges, detail tables.
 
 ## Exit Codes
 
@@ -136,7 +152,7 @@ Self-contained single-file HTML with embedded CSS. No CDN dependencies. Collapsi
 |------|---------|
 | 0 | All checks passed |
 | 1 | At least one CRITICAL failure |
-| 2 | Warnings found (no criticals) |
+| 2 | Non-critical check failures |
 | 3 | Tool error (connection failed, bad config) |
 
 ## Project Structure
@@ -144,13 +160,14 @@ Self-contained single-file HTML with embedded CSS. No CDN dependencies. Collapsi
 ```
 cmd/pgharden/main.go          CLI entry point (cobra)
 internal/
-  checker/                     Check interface, registry, runner
+  buildinfo/                   Version/commit/date via ldflags
+  checker/                     Check interface, SettingCheck, runner
   checks/section{1-8}/        85 check implementations (one file per section)
+  cli/                         Cobra setup, scan pipeline, output, exit codes
   config/                      YAML config + CLI flag binding
   connection/                  pgx connection + privilege detection
   environment/                 Runtime capability detection
   hba/                         pg_hba.conf parsing (SQL view + file fallback)
-  netmask/                     CIDR range calculation
-  report/                      JSON + HTML report generation
-  labels/                      i18n (en_US, fr_FR, zh_CN)
+  labels/                      Check titles and descriptions
+  report/                      Text, JSON, and HTML report renderers
 ```

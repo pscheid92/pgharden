@@ -16,7 +16,7 @@ type Config struct {
 	DSN      string `yaml:"dsn"` // Full connection string (overrides individual fields).
 
 	// Output
-	Format string `yaml:"format"` // json, html
+	Format string `yaml:"format"` // text, json, html
 	Output string `yaml:"output"` // Output file path, empty for stdout.
 	Title  string `yaml:"title"`
 	// Filtering

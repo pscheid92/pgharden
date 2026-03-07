@@ -11,9 +11,9 @@ Single static binary. Single persistent connection. Works on bare metal, contain
 - **Single persistent connection** via [pgx](https://github.com/jackc/pgx) — not 80+ subprocess spawns
 - **Environment-aware** — auto-detects capabilities and gracefully skips checks that can't run
 - **pg_hba.conf via SQL** — uses `pg_hba_file_rules` view on PG 15+, falls back to file parsing on older versions
-- **JSON and HTML output** — machine-readable JSON for CI/CD, self-contained HTML report for humans
-- **Meaningful exit codes** — `0` all passed, `1` critical failures, `2` warnings only, `3` tool error
-- **Multi-language** — English, French, and Chinese labels
+- **Three output formats** — colored text for terminals, JSON for CI/CD, self-contained HTML for reports
+- **Smart format detection** — text when writing to a terminal, JSON when piped or redirected to a file
+- **Meaningful exit codes** — `0` all passed, `1` critical failures, `2` non-critical failures, `3` tool error
 - **Config file support** — YAML with named profiles
 
 ## Quick Start
@@ -22,8 +22,11 @@ Single static binary. Single persistent connection. Works on bare metal, contain
 # Build
 go build -o pgharden ./cmd/pgharden
 
-# Run against a local PostgreSQL
-pgharden -H localhost -p 5432 -U postgres -d postgres -f json
+# Run against a local PostgreSQL (colored text output to terminal)
+pgharden -H localhost -p 5432 -U postgres -d postgres
+
+# Save JSON report (auto-detected when writing to file)
+pgharden -H localhost -U postgres -d postgres -o results.json
 
 # Save HTML report
 pgharden --dsn "host=db.example.com user=auditor dbname=prod sslmode=require" -f html -o report.html
@@ -39,8 +42,11 @@ pgharden --exclude 1.5                  # Skip specific checks
 ### Local PostgreSQL
 
 ```bash
-# JSON to stdout
+# Colored text to terminal (auto-detected)
 pgharden -H localhost -U postgres -d postgres
+
+# JSON to stdout (explicit format)
+pgharden -H localhost -U postgres -d postgres -f json
 
 # HTML report to file
 pgharden -H localhost -U postgres -d postgres -f html -o report.html
@@ -107,13 +113,6 @@ pgharden -H localhost -U postgres -d postgres --allow myapp,billing
 pgharden -H localhost -U postgres -d postgres --exclude-db template0,template1
 ```
 
-### French or Chinese output
-
-```bash
-pgharden -H localhost -U postgres -d postgres -f html -o rapport.html -l fr_FR
-pgharden -H localhost -U postgres -d postgres -f html -o report.html -l zh_CN
-```
-
 ## Installation
 
 ### From source
@@ -134,6 +133,7 @@ See [Releases](https://github.com/pgharden/pgharden/releases).
 
 ```
 pgharden [flags]
+pgharden version
 
 Flags:
   -H, --host string          PostgreSQL server host (default "localhost")
@@ -141,9 +141,10 @@ Flags:
   -U, --user string          PostgreSQL user (default "postgres")
   -d, --database string      Database to connect to (default "postgres")
       --dsn string           Full connection string (overrides host/port/user/database)
-  -f, --format string        Output format: json, html (default "json")
+  -f, --format string        Output format: text, json, html (auto-detected)
   -o, --output string        Output file (default: stdout)
-  -l, --lang string          Language: en_US, fr_FR, zh_CN (default "en_US")
+      --no-color             Disable colored output
+      --title string         Report title
   -c, --config string        Path to YAML config file
       --profile string       Configuration profile to use
       --include strings      Only run these check IDs
@@ -151,8 +152,17 @@ Flags:
       --section string       Only run checks in this section
   -a, --allow strings        Only check these databases
   -e, --exclude-db strings   Exclude these databases
-      --title string         Report title
 ```
+
+### Format auto-detection
+
+When `-f` is not specified, the output format is chosen automatically:
+
+- **Terminal** (stdout is a TTY) → `text` with color
+- **File** (`-o report.json`) → `json`
+- **Pipe** (`pgharden | jq`) → `json`
+
+Color is enabled by default for text output to a terminal. Disable with `--no-color` or the `NO_COLOR` environment variable.
 
 ## Exit Codes
 
@@ -160,7 +170,7 @@ Flags:
 |------|---------|
 | 0 | All checks passed |
 | 1 | At least one CRITICAL failure |
-| 2 | Warnings found (no criticals) |
+| 2 | Non-critical check failures |
 | 3 | Tool error (connection failed, bad config) |
 
 Use in CI/CD:
@@ -170,7 +180,7 @@ pgharden --dsn "$DATABASE_URL" -f json -o results.json
 case $? in
   0) echo "All clear" ;;
   1) echo "CRITICAL issues found" && exit 1 ;;
-  2) echo "Warnings found" ;;
+  2) echo "Non-critical failures found" ;;
   3) echo "Tool error" && exit 1 ;;
 esac
 ```
@@ -192,8 +202,8 @@ See [docs/checks.md](docs/checks.md) for the full listing with requirements and 
 
 ## Documentation
 
-- [docs/checks.md](docs/checks.md) — Complete check reference with IDs, descriptions, requirements, and environment compatibility matrix
-- [docs/config.md](docs/config.md) — Config file format, profiles, and environment detection
+- [docs/checks.md](docs/checks.md) — Complete check reference with IDs, descriptions, requirements, and environment compatibility
+- [docs/config.md](docs/config.md) — Config file format, profiles, output formats, and environment detection
 
 ## Acknowledgments
 
