@@ -2,6 +2,7 @@ package section5
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
@@ -501,6 +502,91 @@ func TestCheck_5_12_MD5(t *testing.T) {
 	}
 	if result.Status != checker.StatusFail {
 		t.Errorf("expected FAIL for md5, got %s", result.Status)
+	}
+}
+
+// --- 5.2: container/zalando accept * ---
+
+func TestCheck_5_2_ContainerAcceptsStar(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformContainer
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("listen_addresses").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("*"))
+
+	c := &check_5_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for listen_addresses=* on container, got %s", result.Status)
+	}
+}
+
+func TestCheck_5_2_ZalandoAcceptsStar(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformZalando
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("listen_addresses").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("*"))
+
+	c := &check_5_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for listen_addresses=* on zalando, got %s", result.Status)
+	}
+}
+
+// --- 5.5: RDS role exclusion ---
+
+func TestCheck_5_5_RDSRolesExcluded(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	// On RDS the query adds a NOT IN clause, so we expect a different query
+	mock.ExpectQuery("SELECT rolname FROM pg_roles WHERE rolcanlogin AND rolconnlimit").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname"}))
+
+	c := &check_5_5{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS when RDS roles excluded, got %s", result.Status)
+	}
+}
+
+// --- 5.7: managed cloud auth_delay skip ---
+
+func TestCheck_5_7_ManagedCloudSkipsAuthDelay(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("authentication_timeout").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("30"))
+
+	c := &check_5_7{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should not FAIL because auth_delay check is skipped on RDS
+	if result.Status == checker.StatusFail {
+		t.Errorf("expected non-FAIL on RDS (auth_delay skipped), got FAIL")
+	}
+	// Should have info message about auth_delay being skipped
+	found := false
+	for _, msg := range result.Messages {
+		if msg.Level == "INFO" && strings.Contains(msg.Content, "auth_delay") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected INFO message about auth_delay being skipped on RDS")
 	}
 }
 

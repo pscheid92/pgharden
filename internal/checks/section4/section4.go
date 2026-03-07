@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -35,7 +34,7 @@ func (c *check_4_1) Requirements() checker.CheckRequirements {
 func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
-	f, err := os.Open("/etc/passwd")
+	f, err := env.GetFS().Open("etc/passwd")
 	if err != nil {
 		result.Status = checker.StatusSkipped
 		result.SkipReason = "Cannot read /etc/passwd: " + err.Error()

@@ -103,3 +103,143 @@ func TestCheck_3_1_22_MissingTokens(t *testing.T) {
 		t.Errorf("expected FAIL for missing tokens, got %s", result.Status)
 	}
 }
+
+func TestCheck_3_1_22_RDSTokens(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("log_line_prefix").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("%t:%r:%u@%d:[%p]:"))
+
+	c := &check_3_1_22{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for RDS log_line_prefix, got %s", result.Status)
+	}
+}
+
+func TestCheck_3_1_22_RDSTokensMissing(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformAurora
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("log_line_prefix").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("%t:%u"))
+
+	c := &check_3_1_22{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for Aurora with missing tokens, got %s", result.Status)
+	}
+}
+
+// --- 3.1.3: logging_collector ---
+
+func TestCheck_3_1_3_BareMetal_On(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformBareMetal
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("logging_collector").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("on"))
+
+	c := &check_3_1_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for logging_collector=on on bare-metal, got %s", result.Status)
+	}
+}
+
+func TestCheck_3_1_3_BareMetal_Off(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformBareMetal
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("logging_collector").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("off"))
+
+	c := &check_3_1_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for logging_collector=off on bare-metal, got %s", result.Status)
+	}
+}
+
+func TestCheck_3_1_3_Container_Off(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformContainer
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("logging_collector").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("off"))
+
+	c := &check_3_1_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for logging_collector=off on container, got %s", result.Status)
+	}
+}
+
+// --- 3.2: pgaudit via extension fallback ---
+
+func TestCheck_3_2_ExtensionFallback_Installed(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+
+	// First query: shared_preload_libraries returns no rows (permission denied)
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("shared_preload_libraries").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}))
+
+	// Fallback: check pg_extension
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
+
+	// pgaudit.log setting
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("pgaudit.log").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("ddl"))
+
+	c := &check_3_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for pgaudit via extension fallback, got %s", result.Status)
+	}
+}
+
+func TestCheck_3_2_ExtensionFallback_NotInstalled(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+
+	// shared_preload_libraries returns no rows → ErrPermissionDenied
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("shared_preload_libraries").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}))
+
+	// Fallback: check pg_extension → not found
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
+
+	c := &check_3_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL when pgaudit extension not installed, got %s", result.Status)
+	}
+}

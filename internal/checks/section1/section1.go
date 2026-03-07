@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -24,7 +24,7 @@ func readPGVersion(ctx context.Context, env *checker.Environment) (string, error
 	}
 
 	if env.HasFilesystem {
-		data, err := os.ReadFile(filepath.Join(env.DataDir, "PG_VERSION"))
+		data, err := fs.ReadFile(env.GetFS(), checker.FSPath(filepath.Join(env.DataDir, "PG_VERSION")))
 		if err != nil {
 			return "", err
 		}
@@ -161,9 +161,10 @@ func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker
 		)
 	}
 
+	fsys := env.GetFS()
 	var found []string
 	for _, pf := range profileFiles {
-		data, err := os.ReadFile(pf)
+		data, err := fs.ReadFile(fsys, checker.FSPath(pf))
 		if err != nil {
 			continue
 		}
@@ -197,7 +198,8 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 		return result, nil
 	}
 
-	matches, err := filepath.Glob("/proc/[0-9]*/environ")
+	fsys := env.GetFS()
+	matches, err := fs.Glob(fsys, "proc/[0-9]*/environ")
 	if err != nil {
 		result.Status = checker.StatusSkipped
 		result.SkipReason = "Cannot enumerate /proc entries: " + err.Error()
@@ -206,14 +208,15 @@ func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	var pidsWithPassword []string
 	for _, envFile := range matches {
-		data, err := os.ReadFile(envFile)
+		data, err := fs.ReadFile(fsys, envFile)
 		if err != nil {
 			continue // permission denied is expected for other users' processes
 		}
 		if strings.Contains(string(data), "PGPASSWORD") {
+			// envFile is "proc/<pid>/environ"
 			parts := strings.Split(envFile, "/")
-			if len(parts) >= 3 {
-				pidsWithPassword = append(pidsWithPassword, parts[2])
+			if len(parts) >= 2 {
+				pidsWithPassword = append(pidsWithPassword, parts[1])
 			}
 		}
 	}
@@ -329,7 +332,8 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 	}
 
 	if env.HasFilesystem {
-		matches, err := filepath.Glob("/etc/apt/sources.list.d/*pgdg*")
+		fsys := env.GetFS()
+		matches, err := fs.Glob(fsys, "etc/apt/sources.list.d/*pgdg*")
 		if err == nil && len(matches) > 0 {
 			var names []string
 			for _, m := range matches {
@@ -339,7 +343,7 @@ func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*check
 			return result, nil
 		}
 
-		data, err := os.ReadFile("/etc/apt/sources.list")
+		data, err := fs.ReadFile(fsys, "etc/apt/sources.list")
 		if err == nil && strings.Contains(string(data), "pgdg") {
 			result.Pass("PGDG repository found in /etc/apt/sources.list")
 			return result, nil
@@ -462,8 +466,8 @@ func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*check
 	result := checker.NewResult(checker.SeverityWarning)
 
 	pgWal := filepath.Join(env.DataDir, "pg_wal")
-	walInfo, err := os.Lstat(pgWal)
-	walSymlink := err == nil && walInfo.Mode()&os.ModeSymlink != 0
+	walInfo, err := fs.Lstat(env.GetFS(), checker.FSPath(pgWal))
+	walSymlink := err == nil && walInfo.Mode()&fs.ModeSymlink != 0
 
 	tempTablespaces, err := checker.ShowSetting(ctx, env.DB, "temp_tablespaces")
 	if err != nil {

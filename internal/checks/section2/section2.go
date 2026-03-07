@@ -5,7 +5,7 @@ package section2
 import (
 	"context"
 	"fmt"
-	"os"
+	"io/fs"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -40,7 +40,7 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 
 	out, err := exec.CommandContext(ctx, "sh", "-c", "umask").CombinedOutput()
 	if err != nil {
-		result.Fail("Cannot determine umask: "+err.Error())
+		result.Fail("Cannot determine umask: " + err.Error())
 		return result, nil
 	}
 
@@ -48,7 +48,7 @@ func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker
 	if umask == "0077" || umask == "077" {
 		result.Pass("umask is set correctly: " + umask)
 	} else {
-		result.Fail("umask is "+umask+" (expected 0077)")
+		result.Fail("umask is " + umask + " (expected 0077)")
 	}
 	return result, nil
 }
@@ -74,6 +74,7 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 		_ = env.DB.QueryRow(ctx, "SELECT pg_config('PKGLIBDIR')").Scan(&libdir)
 	}
 
+	fsys := env.GetFS()
 	dirs := strings.Split(dynPath, ":")
 	var problems []string
 
@@ -85,7 +86,7 @@ func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		info, err := os.Stat(dir)
+		info, err := fs.Stat(fsys, checker.FSPath(dir))
 		if err != nil {
 			continue
 		}
@@ -125,12 +126,13 @@ func (c *check_2_3) Requirements() checker.CheckRequirements {
 func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityWarning)
 
+	fsys := env.GetFS()
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
 
 	var problems []string
 
 	for _, base := range searchDirs {
-		entries, err := os.ReadDir(base)
+		entries, err := fs.ReadDir(fsys, checker.FSPath(base))
 		if err != nil {
 			continue
 		}
@@ -147,13 +149,13 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 				histPath = filepath.Join(base, entry.Name(), ".psql_history")
 			}
 
-			info, err := os.Lstat(histPath)
+			info, err := fs.Lstat(fsys, checker.FSPath(histPath))
 			if err != nil {
 				continue
 			}
 
-			if info.Mode()&os.ModeSymlink != 0 {
-				target, err := os.Readlink(histPath)
+			if info.Mode()&fs.ModeSymlink != 0 {
+				target, err := fs.ReadLink(fsys, checker.FSPath(histPath))
 				if err == nil && target == "/dev/null" {
 					continue // Good: symlinked to /dev/null
 				}
@@ -168,7 +170,7 @@ func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker
 	}
 
 	if len(problems) > 0 {
-		result.Fail(".psql_history exists and is not linked to /dev/null: "+strings.Join(problems, ", "))
+		result.Fail(".psql_history exists and is not linked to /dev/null: " + strings.Join(problems, ", "))
 	} else {
 		result.Pass("No unprotected .psql_history files found")
 	}
@@ -186,14 +188,15 @@ func (c *check_2_4) Requirements() checker.CheckRequirements {
 func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityCritical)
 
+	fsys := env.GetFS()
 	searchDirs := []string{"/home", "/var/lib/postgresql", "/var/lib/pgsql", "/root"}
 	var problems []string
 
 	for _, base := range searchDirs {
-		entries, err := os.ReadDir(base)
+		entries, err := fs.ReadDir(fsys, checker.FSPath(base))
 		if err != nil {
 			if base == "/root" {
-				checkServiceConf("/root/.pg_service.conf", &problems)
+				checkServiceConf(fsys, "/root/.pg_service.conf", &problems)
 			}
 			continue
 		}
@@ -207,20 +210,20 @@ func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker
 			} else {
 				continue
 			}
-			checkServiceConf(confPath, &problems)
+			checkServiceConf(fsys, confPath, &problems)
 		}
 	}
 
 	if len(problems) > 0 {
-		result.Critical("Passwords found in .pg_service.conf: "+strings.Join(problems, ", "))
+		result.Critical("Passwords found in .pg_service.conf: " + strings.Join(problems, ", "))
 	} else {
 		result.Pass("No passwords found in .pg_service.conf files")
 	}
 	return result, nil
 }
 
-func checkServiceConf(path string, problems *[]string) {
-	data, err := os.ReadFile(path)
+func checkServiceConf(fsys fs.FS, path string, problems *[]string) {
+	data, err := fs.ReadFile(fsys, checker.FSPath(path))
 	if err != nil {
 		return
 	}
@@ -246,9 +249,9 @@ func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
-	info, err := os.Stat(hbaFile)
+	info, err := fs.Stat(env.GetFS(), checker.FSPath(hbaFile))
 	if err != nil {
-		result.Fail("Cannot stat pg_hba.conf: "+err.Error())
+		result.Fail("Cannot stat pg_hba.conf: " + err.Error())
 		return result, nil
 	}
 
@@ -278,6 +281,7 @@ func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker
 		return nil, err
 	}
 
+	fsys := env.GetFS()
 	var problems []string
 	dirs := strings.SplitSeq(sockDirs, ",")
 
@@ -287,7 +291,7 @@ func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		info, err := os.Stat(dir)
+		info, err := fs.Stat(fsys, checker.FSPath(dir))
 		if err != nil {
 			continue
 		}
@@ -319,9 +323,9 @@ func (c *check_2_7) Requirements() checker.CheckRequirements {
 func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
 	result := checker.NewResult(checker.SeverityCritical)
 
-	info, err := os.Stat(env.DataDir)
+	info, err := fs.Stat(env.GetFS(), checker.FSPath(env.DataDir))
 	if err != nil {
-		result.Fail("Cannot stat PGDATA directory: "+err.Error())
+		result.Fail("Cannot stat PGDATA directory: " + err.Error())
 		return result, nil
 	}
 

@@ -166,3 +166,37 @@ func TestCheck_7_5_ReplicaWeakSSL(t *testing.T) {
 		t.Errorf("expected FAIL for sslmode=prefer, got %s", result.Status)
 	}
 }
+
+// --- 7.1: RDS check ---
+
+func TestCheck_7_1_RDSReplicationRoleExists(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
+
+	c := &check_7_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for rds_replication role on RDS, got %s", result.Status)
+	}
+}
+
+func TestCheck_7_1_RDSReplicationRoleMissing(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
+
+	c := &check_7_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL when rds_replication missing on RDS, got %s", result.Status)
+	}
+}

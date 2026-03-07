@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -12,18 +12,18 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-func LoadFromFile(path string) ([]Entry, error) {
-	return parseFile(path, 0)
+func LoadFromFile(fsys fs.FS, path string) ([]Entry, error) {
+	return parseFile(fsys, path, 0)
 }
 
 const maxIncludeDepth = 10
 
-func parseFile(path string, depth int) ([]Entry, error) {
+func parseFile(fsys fs.FS, path string, depth int) ([]Entry, error) {
 	if depth > maxIncludeDepth {
 		return nil, fmt.Errorf("include depth exceeded")
 	}
 
-	f, err := os.Open(path)
+	f, err := fsys.Open(checker.FSPath(path))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func parseFile(path string, depth int) ([]Entry, error) {
 			continue
 		}
 
-		if sub, handled, err := parseInclude(line, path, depth); handled {
+		if sub, handled, err := parseInclude(fsys, line, path, depth); handled {
 			if err != nil {
 				return nil, err
 			}
@@ -57,21 +57,21 @@ func parseFile(path string, depth int) ([]Entry, error) {
 	return entries, scanner.Err()
 }
 
-func parseInclude(line, parentPath string, depth int) ([]Entry, bool, error) {
+func parseInclude(fsys fs.FS, line, parentPath string, depth int) ([]Entry, bool, error) {
 	if after, ok := strings.CutPrefix(line, "include_dir "); ok {
-		entries, _ := parseIncludeDir(strings.TrimSpace(after), parentPath, depth)
+		entries, _ := parseIncludeDir(fsys, strings.TrimSpace(after), parentPath, depth)
 		return entries, true, nil
 	}
 
 	if after, ok := strings.CutPrefix(line, "include_if_exists "); ok {
 		incPath := resolveIncludePath(strings.TrimSpace(after), parentPath)
-		sub, _ := parseFile(incPath, depth+1)
+		sub, _ := parseFile(fsys, incPath, depth+1)
 		return sub, true, nil
 	}
 
 	if after, ok := strings.CutPrefix(line, "include "); ok {
 		incPath := resolveIncludePath(strings.TrimSpace(after), parentPath)
-		sub, err := parseFile(incPath, depth+1)
+		sub, err := parseFile(fsys, incPath, depth+1)
 		if err != nil {
 			return nil, true, fmt.Errorf("include %s: %w", incPath, err)
 		}
@@ -81,10 +81,10 @@ func parseInclude(line, parentPath string, depth int) ([]Entry, bool, error) {
 	return nil, false, nil
 }
 
-func parseIncludeDir(dir, parentPath string, depth int) ([]Entry, error) {
+func parseIncludeDir(fsys fs.FS, dir, parentPath string, depth int) ([]Entry, error) {
 	dir = resolveIncludePath(dir, parentPath)
 
-	dirEntries, err := os.ReadDir(dir)
+	dirEntries, err := fs.ReadDir(fsys, checker.FSPath(dir))
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func parseIncludeDir(dir, parentPath string, depth int) ([]Entry, error) {
 		if de.IsDir() || !strings.HasSuffix(de.Name(), ".conf") {
 			continue
 		}
-		sub, err := parseFile(filepath.Join(dir, de.Name()), depth+1)
+		sub, err := parseFile(fsys, filepath.Join(dir, de.Name()), depth+1)
 		if err == nil {
 			entries = append(entries, sub...)
 		}

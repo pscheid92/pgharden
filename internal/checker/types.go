@@ -3,6 +3,8 @@ package checker
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"os"
 	"slices"
 	"sort"
 	"strconv"
@@ -172,6 +174,7 @@ type Environment struct {
 
 	// Capabilities
 	HasFilesystem bool
+	FS            fs.FS           // Filesystem for checks; nil defaults to os.DirFS("/")
 	Commands      map[string]bool
 	Platform      string // detected or user-specified platform
 	OS            string
@@ -192,6 +195,19 @@ type Environment struct {
 // IsManagedCloud returns true if the platform is a managed cloud service (RDS or Aurora).
 func (e *Environment) IsManagedCloud() bool {
 	return e.Platform == PlatformRDS || e.Platform == PlatformAurora
+}
+
+// GetFS returns the environment's filesystem, defaulting to the real OS root.
+func (e *Environment) GetFS() fs.FS {
+	if e.FS != nil {
+		return e.FS
+	}
+	return os.DirFS("/")
+}
+
+// FSPath converts an absolute path to an fs.FS-relative path by stripping the leading "/".
+func FSPath(abs string) string {
+	return strings.TrimPrefix(abs, "/")
 }
 
 func (e *Environment) ShouldCheckDB(db string) bool {

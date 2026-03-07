@@ -2,8 +2,8 @@ package environment
 
 import (
 	"context"
+	"io/fs"
 	"log/slog"
-	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -102,7 +102,7 @@ func detectPlatform(ctx context.Context, db checker.DBQuerier, env *checker.Envi
 	}
 
 	// Local container detection (when running inside the same container)
-	if isLocalContainer() {
+	if isLocalContainer(env.GetFS()) {
 		return checker.PlatformContainer
 	}
 
@@ -122,7 +122,7 @@ func detectRDSOrAurora(ctx context.Context, db checker.DBQuerier) string {
 // Only call this when pgharden is running on the same host as PostgreSQL.
 func EnableLocal(env *checker.Environment) {
 	if env.DataDir != "" {
-		if _, err := os.Stat(env.DataDir); err == nil {
+		if _, err := fs.Stat(env.GetFS(), checker.FSPath(env.DataDir)); err == nil {
 			env.HasFilesystem = true
 		}
 	}
@@ -134,11 +134,11 @@ func EnableLocal(env *checker.Environment) {
 	}
 }
 
-func isLocalContainer() bool {
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+func isLocalContainer(fsys fs.FS) bool {
+	if _, err := fs.Stat(fsys, ".dockerenv"); err == nil {
 		return true
 	}
 
-	data, err := os.ReadFile("/proc/1/cgroup")
+	data, err := fs.ReadFile(fsys, "proc/1/cgroup")
 	return err == nil && containerRe.MatchString(string(data))
 }

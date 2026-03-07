@@ -3,6 +3,7 @@ package section4
 import (
 	"context"
 	"testing"
+	"testing/fstest"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/pgharden/pgharden/internal/checker"
@@ -50,6 +51,42 @@ func TestCheck_4_3_MultipleSuperusers(t *testing.T) {
 	}
 	if len(result.Details) != 3 {
 		t.Errorf("expected 3 detail rows (header + 2), got %d", len(result.Details))
+	}
+}
+
+func TestCheck_4_3_RDSAdminExcluded(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT rolname FROM pg_roles WHERE rolsuper").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname"}).
+			AddRow("postgres").
+			AddRow("rdsadmin"))
+
+	c := &check_4_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS when rdsadmin is filtered on RDS, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_3_RDSAdminNotExcludedOnBareMetal(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformBareMetal
+	mock.ExpectQuery("SELECT rolname FROM pg_roles WHERE rolsuper").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname"}).
+			AddRow("postgres").
+			AddRow("rdsadmin"))
+
+	c := &check_4_3{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL when rdsadmin is not filtered on bare-metal, got %s", result.Status)
 	}
 }
 
@@ -254,5 +291,58 @@ func TestCheck_4_10_PublicSchemaNullACL(t *testing.T) {
 	}
 	if result.Status != checker.StatusFail {
 		t.Errorf("expected FAIL for NULL ACL (default privileges), got %s", result.Status)
+	}
+}
+
+// --- 4.1: postgres user shell ---
+
+func TestCheck_4_1_NoLoginShell(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HasFilesystem = true
+	env.FS = fstest.MapFS{
+		"etc/passwd": {Data: []byte("root:x:0:0:root:/root:/bin/bash\npostgres:x:26:26:PostgreSQL Server:/var/lib/pgsql:/sbin/nologin\n")},
+	}
+
+	c := &check_4_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS for nologin shell, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_1_InteractiveShell(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HasFilesystem = true
+	env.FS = fstest.MapFS{
+		"etc/passwd": {Data: []byte("root:x:0:0:root:/root:/bin/bash\npostgres:x:26:26:PostgreSQL Server:/var/lib/pgsql:/bin/bash\n")},
+	}
+
+	c := &check_4_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for /bin/bash shell, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_1_NoPostgresUser(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HasFilesystem = true
+	env.FS = fstest.MapFS{
+		"etc/passwd": {Data: []byte("root:x:0:0:root:/root:/bin/bash\n")},
+	}
+
+	c := &check_4_1{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusSkipped {
+		t.Errorf("expected SKIPPED when postgres user not found, got %s", result.Status)
 	}
 }

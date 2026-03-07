@@ -257,3 +257,65 @@ func TestCheck_6_11_NoAnon(t *testing.T) {
 		t.Errorf("expected FAIL without anon, got %s", result.Status)
 	}
 }
+
+// --- 6.8: managed cloud SSL ---
+
+func TestCheck_6_8_ManagedCloudSkipsProtocolVersion(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("ssl").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("on"))
+
+	c := &check_6_8{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Should not FAIL — ssl is on, and protocol version is managed by AWS
+	if result.Status == checker.StatusFail {
+		t.Errorf("expected non-FAIL on RDS with ssl=on, got FAIL")
+	}
+	found := false
+	for _, msg := range result.Messages {
+		if msg.Content == "ssl_min_protocol_version managed by AWS" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("expected message about ssl_min_protocol_version being managed by AWS")
+	}
+}
+
+func TestCheck_6_8_ManagedCloudSSLOff(t *testing.T) {
+	mock, env := newMockEnv(t)
+	env.Platform = checker.PlatformAurora
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("ssl").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("off"))
+
+	c := &check_6_8{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusFail {
+		t.Errorf("expected FAIL for ssl=off even on Aurora, got %s", result.Status)
+	}
+}
+
+// --- 6.10: managed cloud ciphers ---
+
+func TestCheck_6_10_ManagedCloudPassesCiphers(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.Platform = checker.PlatformRDS
+
+	c := &check_6_10{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != checker.StatusPass {
+		t.Errorf("expected PASS on RDS (ciphers managed by AWS), got %s", result.Status)
+	}
+}

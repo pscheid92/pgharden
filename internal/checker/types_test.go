@@ -134,6 +134,28 @@ func TestCompareCheckIDs(t *testing.T) {
 	}
 }
 
+func TestIsManagedCloud(t *testing.T) {
+	tests := []struct {
+		platform string
+		want     bool
+	}{
+		{PlatformRDS, true},
+		{PlatformAurora, true},
+		{PlatformBareMetal, false},
+		{PlatformContainer, false},
+		{PlatformZalando, false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.platform, func(t *testing.T) {
+			env := &Environment{Platform: tt.platform}
+			if got := env.IsManagedCloud(); got != tt.want {
+				t.Errorf("IsManagedCloud() = %v for platform %q, want %v", got, tt.platform, tt.want)
+			}
+		})
+	}
+}
+
 func TestSortChecks(t *testing.T) {
 	checks := []Check{
 		&SettingCheck{CheckID: "2.1"},

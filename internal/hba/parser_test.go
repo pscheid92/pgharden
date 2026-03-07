@@ -92,7 +92,7 @@ host all all ::1/128 scram-sha-256
 		t.Fatal(err)
 	}
 
-	entries, err := LoadFromFile(path)
+	entries, err := LoadFromFile(os.DirFS("/"), path)
 	if err != nil {
 		t.Fatalf("LoadFromFile: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestLoadFromFileInclude(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	entries, err := LoadFromFile(mainPath)
+	entries, err := LoadFromFile(os.DirFS("/"), mainPath)
 	if err != nil {
 		t.Fatalf("LoadFromFile: %v", err)
 	}

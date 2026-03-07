@@ -47,7 +47,7 @@ func ensureHBA(ctx context.Context, env *checker.Environment) error {
 	if env.HasFilesystem {
 		var hbaFile string
 		if err := env.DB.QueryRow(ctx, "SHOW hba_file").Scan(&hbaFile); err == nil && hbaFile != "" {
-			entries, err := hba.LoadFromFile(hbaFile)
+			entries, err := hba.LoadFromFile(env.GetFS(), hbaFile)
 			if err == nil {
 				env.HBAEntries = entries
 				env.HBALoaded = true
