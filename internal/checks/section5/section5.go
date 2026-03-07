@@ -3,6 +3,8 @@ package section5
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/netip"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -10,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/pgharden/pgharden/internal/checker"
 	"github.com/pgharden/pgharden/internal/hba"
-	"github.com/pgharden/pgharden/internal/netmask"
 )
 
 // Checks returns all Section 5 checks.
@@ -482,12 +483,6 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		// Build CIDR string
-		cidr := addr
-		if entry.Netmask != "" && !strings.Contains(cidr, "/") {
-			cidr = addr + " " + entry.Netmask
-		}
-
 		// Check for all-addresses patterns
 		if addr == "0.0.0.0/0" || addr == "::/0" || addr == "all" {
 			hasCritical = true
@@ -498,14 +493,14 @@ func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker
 			continue
 		}
 
-		size, err := netmask.NetworkSize(cidr)
-		if err != nil {
+		size, ok := networkSize(addr, entry.Netmask)
+		if !ok {
 			continue
 		}
 
 		if size > 65536 {
 			hasWarning = true
-			result.Warn(fmt.Sprintf("Line %d: large CIDR range '%s' covers %d addresses (db=%s, user=%s)", entry.LineNumber, cidr, size, entry.Database, entry.User))
+			result.Warn(fmt.Sprintf("Line %d: large network range '%s' covers %d addresses (db=%s, user=%s)", entry.LineNumber, addr, size, entry.Database, entry.User))
 		}
 	}
 
@@ -696,4 +691,35 @@ func parsePGInterval(val string) (int, error) {
 		}
 	}
 	return strconv.Atoi(val)
+}
+
+// networkSize returns the number of addresses for an HBA address entry.
+// Returns (0, false) if the address can't be parsed.
+func networkSize(addr, mask string) (uint64, bool) {
+	cidr := addr
+	if mask != "" && !strings.Contains(addr, "/") {
+		m := net.ParseIP(mask)
+		if m == nil {
+			return 0, false
+		}
+		ones, _ := net.IPMask(m.To4()).Size()
+		if ones == 0 {
+			ones, _ = net.IPMask(m.To16()).Size()
+		}
+		cidr = fmt.Sprintf("%s/%d", addr, ones)
+	}
+
+	prefix, err := netip.ParsePrefix(cidr)
+	if err != nil {
+		return 0, false
+	}
+
+	hostBits := prefix.Addr().BitLen() - prefix.Bits()
+	if hostBits <= 0 {
+		return 1, true
+	}
+	if hostBits > 63 {
+		return ^uint64(0), true
+	}
+	return 1 << uint(hostBits), true
 }
