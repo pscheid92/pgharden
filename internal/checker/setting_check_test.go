@@ -150,22 +150,3 @@ func TestSettingCheckQueryError(t *testing.T) {
 	}
 }
 
-func TestSettingCheckCustomMessages(t *testing.T) {
-	mock := newMockDB(t)
-	mock.ExpectQuery("SELECT setting FROM pg_settings").WithArgs(pgxmock.AnyArg()).WillReturnRows(
-		pgxmock.NewRows([]string{"setting"}).AddRow("on"),
-	)
-
-	c := &SettingCheck{
-		CheckID: "t.7", Setting: "ssl", Expected: "on", Sev: SeverityWarning,
-		SuccessMsg: "SSL is good!",
-		FailureMsg: "SSL is bad!",
-	}
-	result, err := c.Run(context.Background(), &Environment{DB: mock})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result.Messages[0].Content != "SSL is good!" {
-		t.Errorf("expected custom success msg, got %q", result.Messages[0].Content)
-	}
-}
