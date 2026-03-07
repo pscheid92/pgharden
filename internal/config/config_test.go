@@ -23,9 +23,6 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Format != "json" {
 		t.Errorf("Format = %q, want json", cfg.Format)
 	}
-	if cfg.Lang != "en_US" {
-		t.Errorf("Lang = %q, want en_US", cfg.Lang)
-	}
 }
 
 func TestConnString(t *testing.T) {
@@ -53,7 +50,6 @@ port: 5433
 user: myuser
 database: mydb
 format: html
-lang: fr_FR
 `
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")

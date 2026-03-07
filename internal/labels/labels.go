@@ -1,66 +1,144 @@
 package labels
 
-// LabelSet holds titles and descriptions for all checks in a language.
-type LabelSet struct {
-	Sections map[string]string     // section ID → title
-	Checks   map[string]CheckLabel // check ID → label
-}
-
-// CheckLabel holds the display text for a single check.
 type CheckLabel struct {
 	Title       string
 	Description string
-	Manual      bool
 }
 
-var languages = map[string]*LabelSet{
-	"en_US": enUS,
-	"fr_FR": frFR,
-	"zh_CN": zhCN,
+var sections = map[string]string{
+	"1": "Installation and Patches",
+	"2": "Directory and File Permissions",
+	"3": "Logging and Auditing",
+	"4": "User Access and Authorization",
+	"5": "Connection and Login",
+	"6": "PostgreSQL Settings",
+	"7": "Replication",
+	"8": "Special Configuration Considerations",
 }
 
-func get(lang string) *LabelSet {
-	if ls, ok := languages[lang]; ok {
-		return ls
-	}
-	if ls, ok := languages["en_US"]; ok {
-		return ls
-	}
-	return &LabelSet{Sections: map[string]string{}, Checks: map[string]CheckLabel{}}
+var checks = map[string]CheckLabel{
+	// Section 1: Installation and Patches
+	"1.1":   {Title: "Ensure packages are obtained from authorized repositories", Description: "PostgreSQL packages should be installed from the official PGDG repository or the operating system's default repository."},
+	"1.1.1": {Title: "Ensure packages are obtained from PGDG repositories", Description: "Verify that PostgreSQL was installed from the official PostgreSQL Global Development Group (PGDG) repository."},
+	"1.2":   {Title: "Ensure systemd Service Files Are Enabled", Description: "Ensure that the PostgreSQL systemd service is enabled and properly configured."},
+	"1.3":   {Title: "Ensure Data Cluster Initialized Successfully", Description: "Verify that the PostgreSQL data cluster was properly initialized."},
+	"1.4":   {Title: "Ensure PostgreSQL versions are up-to-date", Description: "Keep PostgreSQL up-to-date with the latest patches."},
+	"1.4.1": {Title: "Ensure the configured PostgreSQL version is consistent with the running version", Description: "Verify that the PG_VERSION file matches the running server."},
+	"1.4.2": {Title: "Ensure the configured PostgreSQL cluster data directory version is consistent", Description: "Verify PGDATA/PG_VERSION matches the expected version."},
+	"1.4.3": {Title: "Ensure data checksums are enabled", Description: "Data checksums help detect corruption in the storage system."},
+	"1.4.4": {Title: "Ensure WAL and temp are on separate storage if possible", Description: "Check pg_wal and temp_tablespaces locations for performance isolation."},
+	"1.4.5": {Title: "Ensure the audit of the storage type used to store the data", Description: "Review storage types used for PostgreSQL data."},
+	"1.5":   {Title: "Ensure PostgreSQL is at the latest available version", Description: "Compare the running version against the latest available release."},
+	"1.6":   {Title: "Ensure PGPASSWORD is not set in shell profiles", Description: "PGPASSWORD should not be stored in shell initialization files."},
+	"1.7":   {Title: "Ensure PGPASSWORD is not set in process environment", Description: "PGPASSWORD should not be visible in the process environment."},
+	"1.8":   {Title: "Ensure PostgreSQL extensions installed are authorized", Description: "Review installed extensions for security implications."},
+	"1.9":   {Title: "Ensure tablespace locations are secure", Description: "Validate that tablespace symlinks point to secure locations."},
+
+	// Section 2: Directory and File Permissions
+	"2.1": {Title: "Ensure the file permissions mask is correct", Description: "The umask for the PostgreSQL OS user should be 0077."},
+	"2.2": {Title: "Ensure the PostgreSQL pg_wheel group membership is correct", Description: "Check extension directory ownership and permissions."},
+	"2.3": {Title: "Ensure psql command history is not maintained", Description: "The .psql_history file should be linked to /dev/null."},
+	"2.4": {Title: "Ensure .pg_service.conf does not contain passwords", Description: "The .pg_service.conf file should not store plaintext passwords."},
+	"2.5": {Title: "Ensure pg_hba.conf permissions are restrictive", Description: "pg_hba.conf should be readable only by the PostgreSQL user."},
+	"2.6": {Title: "Ensure Unix socket directory has restrictive permissions", Description: "The Unix domain socket directory must not be world-writable."},
+	"2.7": {Title: "Ensure PGDATA directory has restrictive permissions", Description: "PGDATA must have mode 0700 (drwx------)."},
+	"2.8": {Title: "Ensure PGDATA content is owned by the postgres user", Description: "All files in PGDATA should be owned by the PostgreSQL OS user."},
+
+	// Section 3: Logging and Auditing
+	"3.1":    {Title: "PostgreSQL Logging", Description: "Configure comprehensive logging for security auditing."},
+	"3.1.2":  {Title: "Ensure the log destinations are set correctly", Description: "log_destination should be configured."},
+	"3.1.3":  {Title: "Ensure the logging collector is enabled", Description: "logging_collector should be 'on'."},
+	"3.1.4":  {Title: "Ensure the log file destination directory is set correctly", Description: "log_directory should be set to a valid path."},
+	"3.1.5":  {Title: "Ensure the filename pattern for log files is set correctly", Description: "log_filename should use a pattern that includes date."},
+	"3.1.6":  {Title: "Ensure the log file permissions are set correctly", Description: "log_file_mode should be 0600."},
+	"3.1.7":  {Title: "Ensure log_truncate_on_rotation is enabled", Description: "log_truncate_on_rotation should be 'on'."},
+	"3.1.8":  {Title: "Ensure the maximum log file lifetime is set correctly", Description: "log_rotation_age should be set to 1d."},
+	"3.1.9":  {Title: "Ensure the maximum log file size is set correctly", Description: "log_rotation_size should be set to 1GB (1048576kB)."},
+	"3.1.10": {Title: "Ensure the correct syslog facility is set", Description: "syslog_facility should be set appropriately."},
+	"3.1.11": {Title: "Ensure syslog_sequence_numbers is enabled", Description: "syslog_sequence_numbers should be 'on'."},
+	"3.1.12": {Title: "Ensure syslog_split_messages is enabled", Description: "syslog_split_messages should be 'on'."},
+	"3.1.13": {Title: "Ensure the correct syslog_ident is set", Description: "syslog_ident should identify the PostgreSQL instance."},
+	"3.1.14": {Title: "Ensure the log_min_messages is set correctly", Description: "log_min_messages should be 'warning'."},
+	"3.1.15": {Title: "Ensure the correct messages are written to the server log", Description: "log_min_error_statement should be 'error'."},
+	"3.1.16": {Title: "Ensure debug_print_parse is disabled", Description: "debug_print_parse should be 'off'."},
+	"3.1.17": {Title: "Ensure debug_print_rewritten is disabled", Description: "debug_print_rewritten should be 'off'."},
+	"3.1.18": {Title: "Ensure debug_print_plan is disabled", Description: "debug_print_plan should be 'off'."},
+	"3.1.19": {Title: "Ensure debug_pretty_print is enabled", Description: "debug_pretty_print should be 'on'."},
+	"3.1.20": {Title: "Ensure log_connections is enabled", Description: "log_connections should be 'on'."},
+	"3.1.21": {Title: "Ensure log_disconnections is enabled", Description: "log_disconnections should be 'on'."},
+	"3.1.22": {Title: "Ensure the log line prefix is set correctly", Description: "log_line_prefix should include %%m, %%p, %%d, %%u, %%a, %%h."},
+	"3.1.23": {Title: "Ensure log_statement is set correctly", Description: "log_statement should be at least 'ddl'."},
+	"3.1.24": {Title: "Ensure log_timezone is set correctly", Description: "log_timezone should match the desired timezone."},
+	"3.1.25": {Title: "Ensure log_error_verbosity is set correctly", Description: "log_error_verbosity should be 'verbose'."},
+	"3.1.26": {Title: "Ensure the log_hostname is disabled", Description: "log_hostname should be 'off' for performance reasons."},
+	"3.1.27": {Title: "Ensure the log_duration is disabled", Description: "log_duration should be 'off'; use log_min_duration_statement instead."},
+	"3.2":    {Title: "Ensure the pgAudit extension is enabled", Description: "pgaudit should be installed and configured for enhanced auditing."},
+
+	// Section 4: User Access and Authorization
+	"4.1":  {Title: "Ensure sudo or equivalent is used to limit postgres admin access", Description: "The postgres OS user should not have an interactive login shell."},
+	"4.3":  {Title: "Ensure excessive administrative privileges are revoked", Description: "Only one superuser account should exist (typically 'postgres')."},
+	"4.4":  {Title: "Ensure login roles have strong passwords", Description: "Review all roles that can log in."},
+	"4.5":  {Title: "Ensure SECURITY DEFINER functions are properly secured", Description: "Functions with SECURITY DEFINER can escalate privileges."},
+	"4.6":  {Title: "Ensure excessive DML privileges are revoked", Description: "Non-superuser roles should not have unnecessary DML privileges on system tables."},
+	"4.7":  {Title: "Ensure Row Level Security is configured correctly", Description: "Review tables with RLS enabled."},
+	"4.8":  {Title: "Ensure the set_user extension is installed", Description: "Review the role privilege hierarchy."},
+	"4.9":  {Title: "Ensure the pgcrypto or pgsodium extension is installed for application-level encryption", Description: "Applications should use encryption extensions if needed."},
+	"4.10": {Title: "Ensure the public schema has appropriate privileges", Description: "The public schema should have restricted CREATE and USAGE privileges."},
+
+	// Section 5: Connection and Login
+	"5.1":  {Title: "Ensure login via 'local' UNIX Domain Socket is configured correctly", Description: "No passwords should be visible in process listings."},
+	"5.2":  {Title: "Ensure listen_addresses is configured correctly", Description: "listen_addresses should not be set to '*' or '0.0.0.0'."},
+	"5.3":  {Title: "Ensure pg_hba.conf local connections use secure authentication", Description: "Local connections should use 'peer' authentication."},
+	"5.4":  {Title: "Ensure pg_hba.conf host connections use secure authentication", Description: "Remote connections should use 'scram-sha-256' or certificate-based authentication."},
+	"5.5":  {Title: "Ensure connection limits are configured", Description: "Roles should have connection limits set."},
+	"5.6":  {Title: "Ensure password complexity validation is configured", Description: "A password-checking module should be loaded."},
+	"5.7":  {Title: "Ensure authentication timeout and delay are configured", Description: "authentication_timeout should be ≤60s and auth_delay should be configured."},
+	"5.8":  {Title: "Ensure SSL/GSSENC is used for all host connections", Description: "All remote connections should use encryption (hostssl or hostgssenc)."},
+	"5.9":  {Title: "Ensure network CIDR ranges are minimized", Description: "Connection rules should use the smallest possible CIDR ranges."},
+	"5.10": {Title: "Ensure specific databases and users are specified", Description: "pg_hba.conf should not use 'all' for database or user fields."},
+	"5.11": {Title: "Ensure superuser connections are restricted", Description: "Superusers should only be allowed to connect locally."},
+	"5.12": {Title: "Ensure password encryption is set to scram-sha-256", Description: "password_encryption should be 'scram-sha-256'."},
+
+	// Section 6: PostgreSQL Settings
+	"6.2":  {Title: "Ensure 'backend' runtime parameters are configured correctly", Description: "Backend context parameters should have safe values."},
+	"6.3":  {Title: "Ensure 'postmaster' runtime parameters are configured correctly", Description: "Postmaster context parameters are listed for review."},
+	"6.4":  {Title: "Ensure 'sighup' runtime parameters are configured correctly", Description: "SIGHUP context parameters are listed for review."},
+	"6.5":  {Title: "Ensure 'superuser' runtime parameters are configured correctly", Description: "Superuser context parameters are listed for review."},
+	"6.6":  {Title: "Ensure 'user' runtime parameters are configured correctly", Description: "User context parameters are listed for review."},
+	"6.7":  {Title: "Ensure FIPS 140-2 OpenSSL cryptography is used", Description: "Check if the system is running in FIPS mode."},
+	"6.8":  {Title: "Ensure TLS is enabled and configured correctly", Description: "SSL should be on, ssl_min_protocol_version should be TLSv1.2 or higher."},
+	"6.9":  {Title: "Ensure a cryptographic extension is installed", Description: "pgcrypto or pgsodium should be available."},
+	"6.10": {Title: "Ensure SSL ciphers are configured correctly", Description: "Only strong cipher suites should be allowed."},
+	"6.11": {Title: "Ensure data anonymization extension is configured", Description: "anon or pg_anonymize should be configured for data masking."},
+
+	// Section 7: Replication
+	"7.1": {Title: "Ensure a replication-only user is configured", Description: "A dedicated user with REPLICATION privilege should exist."},
+	"7.2": {Title: "Ensure replication commands are logged", Description: "log_replication_commands should be 'on'."},
+	"7.4": {Title: "Ensure WAL archiving is configured", Description: "WAL archiving should be properly configured."},
+	"7.5": {Title: "Ensure streaming replication parameters are configured correctly", Description: "primary_conninfo should use SSL."},
+
+	// Section 8: Special Configuration
+	"8.2": {Title: "Ensure a backup and recovery tool is configured", Description: "A backup tool like pgBackRest should be installed and configured."},
+	"8.3": {Title: "Ensure special file and program configuration is reviewed", Description: "Review settings that reference external files and programs."},
 }
 
-// SectionTitle returns the localized section title.
-func SectionTitle(lang, sectionID string) string {
-	ls := get(lang)
-	if t, ok := ls.Sections[sectionID]; ok {
+func SectionTitle(sectionID string) string {
+	if t, ok := sections[sectionID]; ok {
 		return t
 	}
 	return "Section " + sectionID
 }
 
-// CheckTitle returns the localized check title.
-func CheckTitle(lang, checkID string) string {
-	ls := get(lang)
-	if c, ok := ls.Checks[checkID]; ok {
+func CheckTitle(checkID string) string {
+	if c, ok := checks[checkID]; ok {
 		return c.Title
 	}
 	return "Check " + checkID
 }
 
-// CheckDescription returns the localized check description.
-func CheckDescription(lang, checkID string) string {
-	ls := get(lang)
-	if c, ok := ls.Checks[checkID]; ok {
+func CheckDescription(checkID string) string {
+	if c, ok := checks[checkID]; ok {
 		return c.Description
 	}
 	return ""
-}
-
-// IsManual returns whether a check is manual-only.
-func IsManual(lang, checkID string) bool {
-	ls := get(lang)
-	if c, ok := ls.Checks[checkID]; ok {
-		return c.Manual
-	}
-	return false
 }

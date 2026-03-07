@@ -96,5 +96,5 @@ func runChecks(ctx context.Context, cfg *config.Config, env *checker.Environment
 		Database:    cfg.Database,
 		ToolVersion: buildinfo.Version,
 	}
-	return report.Build(results, env, meta, cfg.Lang)
+	return report.Build(results, env, meta)
 }

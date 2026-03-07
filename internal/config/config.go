@@ -19,8 +19,6 @@ type Config struct {
 	Format string `yaml:"format"` // json, html
 	Output string `yaml:"output"` // Output file path, empty for stdout.
 	Title  string `yaml:"title"`
-	Lang   string `yaml:"lang"` // en_US, fr_FR, zh_CN
-
 	// Filtering
 	IncludeChecks  []string `yaml:"include_checks"`
 	ExcludeChecks  []string `yaml:"exclude_checks"`
@@ -48,7 +46,6 @@ func DefaultConfig() *Config {
 		User:     "postgres",
 		Database: "postgres",
 		Format:   "json",
-		Lang:     "en_US",
 	}
 }
 

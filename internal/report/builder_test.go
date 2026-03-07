@@ -17,7 +17,7 @@ func TestBuildSummaryCounts(t *testing.T) {
 		{CheckID: "2.1", Err: fmt.Errorf("query failed")},
 	}
 
-	rpt := Build(results, nil, Metadata{}, "en_US")
+	rpt := Build(results, nil, Metadata{})
 
 	if rpt.Summary.Total != 6 {
 		t.Errorf("Total = %d, want 6", rpt.Summary.Total)
@@ -45,7 +45,7 @@ func TestBuildSectionGrouping(t *testing.T) {
 		{CheckID: "3.1.2", Result: &checker.CheckResult{Status: checker.StatusPass}},
 	}
 
-	rpt := Build(results, nil, Metadata{}, "en_US")
+	rpt := Build(results, nil, Metadata{})
 
 	if len(rpt.Categories) != 3 {
 		t.Fatalf("got %d categories, want 3", len(rpt.Categories))
@@ -65,7 +65,7 @@ func TestBuildBySeverity(t *testing.T) {
 		{CheckID: "1.3", Result: &checker.CheckResult{Status: checker.StatusFail, Severity: checker.SeverityWarning}},
 	}
 
-	rpt := Build(results, nil, Metadata{}, "en_US")
+	rpt := Build(results, nil, Metadata{})
 
 	if rpt.Summary.BySeverity["CRITICAL"] != 2 {
 		t.Errorf("CRITICAL = %d, want 2", rpt.Summary.BySeverity["CRITICAL"])

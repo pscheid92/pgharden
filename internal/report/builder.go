@@ -9,7 +9,7 @@ import (
 )
 
 // Build constructs a Report from check results and environment info.
-func Build(results []checker.RunResult, env *checker.Environment, meta Metadata, lang string) *Report {
+func Build(results []checker.RunResult, env *checker.Environment, meta Metadata) *Report {
 	meta.Timestamp = time.Now().UTC()
 	if env != nil {
 		meta.PGVersion = env.PGVersionFull
@@ -43,7 +43,7 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata,
 		if !ok {
 			cat = &CategoryReport{
 				ID:    sectionID,
-				Title: labels.SectionTitle(lang, sectionID),
+				Title: labels.SectionTitle(sectionID),
 			}
 			sections[sectionID] = cat
 			sectionOrder = append(sectionOrder, sectionID)
@@ -51,8 +51,8 @@ func Build(results []checker.RunResult, env *checker.Environment, meta Metadata,
 
 		cr := CheckReport{
 			ID:          rr.CheckID,
-			Title:       labels.CheckTitle(lang, rr.CheckID),
-			Description: labels.CheckDescription(lang, rr.CheckID),
+			Title:       labels.CheckTitle(rr.CheckID),
+			Description: labels.CheckDescription(rr.CheckID),
 		}
 
 		if rr.Err != nil {
