@@ -23,6 +23,12 @@ const (
 	PlatformAurora    = "aurora"
 )
 
+// Platform skip lists for common platform groupings used in CheckRequirements.SkipPlatforms.
+var (
+	NonBareMetal = []string{PlatformContainer, PlatformZalando, PlatformRDS, PlatformAurora}
+	ManagedCloud = []string{PlatformRDS, PlatformAurora}
+)
+
 type Severity int
 
 const (
@@ -69,12 +75,13 @@ func (s Status) String() string {
 }
 
 type CheckRequirements struct {
-	SQLOnly      bool     // SQL-only check; no filesystem or command access needed.
-	Filesystem   bool     // Requires filesystem access to PGDATA.
-	Commands     []string // System commands required (e.g., "systemctl", "lsblk").
-	MinPGVersion int      // Minimum PostgreSQL version (major, e.g., 13).
-	Superuser    bool     // Requires superuser or equivalent privileges.
-	PGMonitor    bool     // Requires pg_monitor membership or equivalent.
+	SQLOnly       bool     // SQL-only check; no filesystem or command access needed.
+	Filesystem    bool     // Requires filesystem access to PGDATA.
+	Commands      []string // System commands required (e.g., "systemctl", "lsblk").
+	MinPGVersion  int      // Minimum PostgreSQL version (major, e.g., 13).
+	Superuser     bool     // Requires superuser or equivalent privileges.
+	PGMonitor     bool     // Requires pg_monitor membership or equivalent.
+	SkipPlatforms []string // Platforms where this check is not applicable (e.g., "rds", "aurora").
 }
 
 func NewResult(sev Severity) *CheckResult {

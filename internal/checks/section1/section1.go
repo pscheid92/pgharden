@@ -58,7 +58,7 @@ type check_1_1 struct{}
 func (c *check_1_1) ID() string { return "1.1" }
 
 func (c *check_1_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -70,7 +70,7 @@ type check_1_2 struct{}
 func (c *check_1_2) ID() string { return "1.2" }
 
 func (c *check_1_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Commands: []string{"systemctl"}}
+	return checker.CheckRequirements{Commands: []string{"systemctl"}, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -102,7 +102,7 @@ type check_1_3 struct{}
 func (c *check_1_3) ID() string { return "1.3" }
 
 func (c *check_1_3) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -140,7 +140,7 @@ type check_1_6 struct{}
 func (c *check_1_6) ID() string { return "1.6" }
 
 func (c *check_1_6) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -185,7 +185,7 @@ type check_1_7 struct{}
 func (c *check_1_7) ID() string { return "1.7" }
 
 func (c *check_1_7) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -273,7 +273,7 @@ type check_1_9 struct{}
 func (c *check_1_9) ID() string { return "1.9" }
 
 func (c *check_1_9) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
+	return checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_1_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -318,7 +318,7 @@ type check_1_1_1 struct{}
 func (c *check_1_1_1) ID() string { return "1.1.1" }
 
 func (c *check_1_1_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_1_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -354,7 +354,7 @@ type check_1_4_1 struct{}
 func (c *check_1_4_1) ID() string { return "1.4.1" }
 
 func (c *check_1_4_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -386,7 +386,7 @@ type check_1_4_2 struct{}
 func (c *check_1_4_2) ID() string { return "1.4.2" }
 
 func (c *check_1_4_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_4_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -455,7 +455,7 @@ type check_1_4_4 struct{}
 func (c *check_1_4_4) ID() string { return "1.4.4" }
 
 func (c *check_1_4_4) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_1_4_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

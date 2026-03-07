@@ -71,6 +71,16 @@ func (r *Runner) runOne(ctx context.Context, c Check) RunResult {
 	id := c.ID()
 	requirements := c.Requirements()
 
+	if len(requirements.SkipPlatforms) > 0 && slices.Contains(requirements.SkipPlatforms, r.Env.Platform) {
+		return RunResult{
+			CheckID: id,
+			Result: &CheckResult{
+				Status:     StatusSkipped,
+				SkipReason: fmt.Sprintf("Not applicable on platform: %s", r.Env.Platform),
+			},
+		}
+	}
+
 	if requirements.MinPGVersion > 0 && r.Env.PGVersion < requirements.MinPGVersion {
 		return RunResult{
 			CheckID: id,

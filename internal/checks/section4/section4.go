@@ -29,7 +29,7 @@ type check_4_1 struct{}
 func (c *check_4_1) ID() string { return "4.1" }
 
 func (c *check_4_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_4_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

@@ -21,7 +21,7 @@ type check_8_2 struct{}
 func (c *check_8_2) ID() string { return "8.2" }
 
 func (c *check_8_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Commands: []string{"pgbackrest"}}
+	return checker.CheckRequirements{Commands: []string{"pgbackrest"}, SkipPlatforms: []string{checker.PlatformZalando, checker.PlatformRDS, checker.PlatformAurora}}
 }
 
 func (c *check_8_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

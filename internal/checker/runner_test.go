@@ -231,6 +231,45 @@ func TestRunnerCheckErrorBecomesCritical(t *testing.T) {
 	}
 }
 
+func TestRunnerSkipPlatform(t *testing.T) {
+	pass := &CheckResult{Status: StatusPass}
+	checks := []Check{
+		&fakeCheck{id: "1.1", reqs: CheckRequirements{SkipPlatforms: NonBareMetal}, res: pass},
+		&fakeCheck{id: "1.2", reqs: CheckRequirements{SkipPlatforms: ManagedCloud}, res: pass},
+		&fakeCheck{id: "1.3", res: pass}, // no skip
+	}
+
+	r := &Runner{Checks: checks, Env: &Environment{PGVersion: 16, Platform: PlatformRDS, Commands: map[string]bool{}}}
+	results := r.RunAll(context.Background())
+
+	if len(results) != 3 {
+		t.Fatalf("got %d results, want 3", len(results))
+	}
+	if results[0].Result.Status != StatusSkipped {
+		t.Errorf("check 1.1: expected SKIPPED on RDS (NonBareMetal), got %s", results[0].Result.Status)
+	}
+	if results[1].Result.Status != StatusSkipped {
+		t.Errorf("check 1.2: expected SKIPPED on RDS (ManagedCloud), got %s", results[1].Result.Status)
+	}
+	if results[2].Result.Status != StatusPass {
+		t.Errorf("check 1.3: expected PASS (no skip), got %s", results[2].Result.Status)
+	}
+}
+
+func TestRunnerPlatformNotSkippedOnBareMetal(t *testing.T) {
+	pass := &CheckResult{Status: StatusPass}
+	checks := []Check{
+		&fakeCheck{id: "1.1", reqs: CheckRequirements{SkipPlatforms: NonBareMetal}, res: pass},
+	}
+
+	r := &Runner{Checks: checks, Env: &Environment{PGVersion: 16, Platform: PlatformBareMetal, Commands: map[string]bool{}}}
+	results := r.RunAll(context.Background())
+
+	if len(results) != 1 || results[0].Result.Status != StatusPass {
+		t.Errorf("expected PASS on bare-metal, got %v", results)
+	}
+}
+
 func TestRunnerVersionMet(t *testing.T) {
 	checks := []Check{
 		&fakeCheck{id: "1.1", reqs: CheckRequirements{MinPGVersion: 15}, res: &CheckResult{Status: StatusPass}},

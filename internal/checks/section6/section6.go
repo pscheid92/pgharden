@@ -138,7 +138,7 @@ type check_6_7 struct{}
 func (c *check_6_7) ID() string { return "6.7" }
 
 func (c *check_6_7) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Commands: []string{"fips-mode-setup"}}
+	return checker.CheckRequirements{Commands: []string{"fips-mode-setup"}, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_6_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

@@ -32,7 +32,7 @@ type check_2_1 struct{}
 func (c *check_2_1) ID() string { return "2.1" }
 
 func (c *check_2_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Commands: []string{"sh"}}
+	return checker.CheckRequirements{Commands: []string{"sh"}, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -58,7 +58,7 @@ type check_2_2 struct{}
 func (c *check_2_2) ID() string { return "2.2" }
 
 func (c *check_2_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -119,7 +119,7 @@ type check_2_3 struct{}
 func (c *check_2_3) ID() string { return "2.3" }
 
 func (c *check_2_3) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -180,7 +180,7 @@ type check_2_4 struct{}
 func (c *check_2_4) ID() string { return "2.4" }
 
 func (c *check_2_4) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -235,7 +235,7 @@ type check_2_5 struct{}
 func (c *check_2_5) ID() string { return "2.5" }
 
 func (c *check_2_5) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -267,7 +267,7 @@ type check_2_6 struct{}
 func (c *check_2_6) ID() string { return "2.6" }
 
 func (c *check_2_6) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_6) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -313,7 +313,7 @@ type check_2_7 struct{}
 func (c *check_2_7) ID() string { return "2.7" }
 
 func (c *check_2_7) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_7) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -339,7 +339,7 @@ type check_2_8 struct{}
 func (c *check_2_8) ID() string { return "2.8" }
 
 func (c *check_2_8) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Filesystem: true}
+	return checker.CheckRequirements{Filesystem: true, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_2_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

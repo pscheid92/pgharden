@@ -63,7 +63,7 @@ type check_5_1 struct{}
 func (c *check_5_1) ID() string { return "5.1" }
 
 func (c *check_5_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Commands: []string{"ps"}}
+	return checker.CheckRequirements{Commands: []string{"ps"}, SkipPlatforms: checker.NonBareMetal}
 }
 
 func (c *check_5_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -101,7 +101,7 @@ type check_5_2 struct{}
 func (c *check_5_2) ID() string { return "5.2" }
 
 func (c *check_5_2) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
+	return checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_2) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -126,7 +126,7 @@ type check_5_3 struct{}
 func (c *check_5_3) ID() string { return "5.3" }
 
 func (c *check_5_3) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_3) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -171,7 +171,7 @@ type check_5_4 struct{}
 func (c *check_5_4) ID() string { return "5.4" }
 
 func (c *check_5_4) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -335,7 +335,7 @@ type check_5_8 struct{}
 func (c *check_5_8) ID() string { return "5.8" }
 
 func (c *check_5_8) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_8) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -373,7 +373,7 @@ type check_5_9 struct{}
 func (c *check_5_9) ID() string { return "5.9" }
 
 func (c *check_5_9) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_9) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -432,7 +432,7 @@ type check_5_10 struct{}
 func (c *check_5_10) ID() string { return "5.10" }
 
 func (c *check_5_10) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{}
+	return checker.CheckRequirements{SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_10) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -466,7 +466,7 @@ type check_5_11 struct{}
 func (c *check_5_11) ID() string { return "5.11" }
 
 func (c *check_5_11) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{Superuser: true}
+	return checker.CheckRequirements{Superuser: true, SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_5_11) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

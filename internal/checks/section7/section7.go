@@ -16,7 +16,7 @@ func Checks() []checker.Check {
 		&checker.SettingCheck{
 			CheckID: "7.2", Setting: "log_replication_commands", Expected: "on",
 			Sev: checker.SeverityWarning, Reqs: checker.CheckRequirements{SQLOnly: true},
-		},
+		}, // 7.2 runs on all platforms per matrix
 		&check_7_4{},
 		&check_7_5{},
 	}
@@ -27,7 +27,7 @@ type check_7_1 struct{}
 func (c *check_7_1) ID() string { return "7.1" }
 
 func (c *check_7_1) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
+	return checker.CheckRequirements{SQLOnly: true, SkipPlatforms: []string{checker.PlatformAurora}}
 }
 
 func (c *check_7_1) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -78,7 +78,7 @@ type check_7_4 struct{}
 func (c *check_7_4) ID() string { return "7.4" }
 
 func (c *check_7_4) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
+	return checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_7_4) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {
@@ -118,7 +118,7 @@ type check_7_5 struct{}
 func (c *check_7_5) ID() string { return "7.5" }
 
 func (c *check_7_5) Requirements() checker.CheckRequirements {
-	return checker.CheckRequirements{SQLOnly: true}
+	return checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.ManagedCloud}
 }
 
 func (c *check_7_5) Run(ctx context.Context, env *checker.Environment) (*checker.CheckResult, error) {

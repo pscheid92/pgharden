@@ -8,7 +8,11 @@ import (
 	"github.com/pgharden/pgharden/internal/checker"
 )
 
-var sqlOnly = checker.CheckRequirements{SQLOnly: true}
+var (
+	sqlOnly         = checker.CheckRequirements{SQLOnly: true}
+	sqlOnlyCloudNA  = checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.ManagedCloud}
+	sqlOnlyLocalNA  = checker.CheckRequirements{SQLOnly: true, SkipPlatforms: checker.NonBareMetal}
+)
 
 func Checks() []checker.Check {
 	checks := []checker.Check{
@@ -24,12 +28,12 @@ func Checks() []checker.Check {
 var settingChecks = []checker.SettingCheck{
 	{CheckID: "3.1.2", Setting: "log_destination", Comparator: "neq", Expected: "", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 	{CheckID: "3.1.3", Setting: "logging_collector", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.4", Setting: "log_directory", Comparator: "neq", Expected: "", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.5", Setting: "log_filename", Comparator: "neq", Expected: "", Sev: checker.SeverityInfo, Reqs: sqlOnly},
-	{CheckID: "3.1.6", Setting: "log_file_mode", Expected: "0600", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.7", Setting: "log_truncate_on_rotation", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.8", Setting: "log_rotation_age", Expected: "1d", Sev: checker.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.9", Setting: "log_rotation_size", Comparator: "oneof", Expected: "1GB,1048576kB", Sev: checker.SeverityWarning, Reqs: sqlOnly},
+	{CheckID: "3.1.4", Setting: "log_directory", Comparator: "neq", Expected: "", Sev: checker.SeverityWarning, Reqs: sqlOnlyCloudNA},
+	{CheckID: "3.1.5", Setting: "log_filename", Comparator: "neq", Expected: "", Sev: checker.SeverityInfo, Reqs: sqlOnlyCloudNA},
+	{CheckID: "3.1.6", Setting: "log_file_mode", Expected: "0600", Sev: checker.SeverityWarning, Reqs: sqlOnlyCloudNA},
+	{CheckID: "3.1.7", Setting: "log_truncate_on_rotation", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnlyLocalNA},
+	{CheckID: "3.1.8", Setting: "log_rotation_age", Expected: "1d", Sev: checker.SeverityWarning, Reqs: sqlOnlyLocalNA},
+	{CheckID: "3.1.9", Setting: "log_rotation_size", Comparator: "oneof", Expected: "1GB,1048576kB", Sev: checker.SeverityWarning, Reqs: sqlOnlyLocalNA},
 	{CheckID: "3.1.10", Setting: "syslog_facility", Comparator: "neq", Expected: "", Sev: checker.SeverityInfo, Reqs: sqlOnly},
 	{CheckID: "3.1.11", Setting: "syslog_sequence_numbers", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnly},
 	{CheckID: "3.1.12", Setting: "syslog_split_messages", Expected: "on", Sev: checker.SeverityWarning, Reqs: sqlOnly},
