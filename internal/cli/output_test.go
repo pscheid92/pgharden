@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/platform/config"
 )
 
 func sampleReport() *report.Report {

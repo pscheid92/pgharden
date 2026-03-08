@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/app/scanner"
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/scanner"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/platform/config"
 )
 
 // mockConnector satisfies Connector for unit tests.
@@ -207,6 +207,7 @@ func TestScanOpts_MapsConfigFields(t *testing.T) {
 	cfg.IncludeChecks = []string{"1.1", "1.2"}
 	cfg.ExcludeChecks = []string{"2.1"}
 	cfg.IncludeSection = "3"
+	cfg.IncludeSource = "cis"
 	cfg.Host = "db.example.com"
 	cfg.Port = 5433
 	cfg.Database = "mydb"
@@ -221,6 +222,9 @@ func TestScanOpts_MapsConfigFields(t *testing.T) {
 	}
 	if opts.IncludeSection != "3" {
 		t.Errorf("IncludeSection not mapped: %q", opts.IncludeSection)
+	}
+	if opts.IncludeSource != "cis" {
+		t.Errorf("IncludeSource not mapped: %q", opts.IncludeSource)
 	}
 	if opts.Meta.Host != "db.example.com" {
 		t.Errorf("Meta.Host not mapped: %q", opts.Meta.Host)

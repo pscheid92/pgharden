@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/adapter/postgres"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/adapter/postgres"
 )
 
 var (
@@ -40,9 +40,11 @@ func Detect(ctx context.Context, db domain.DBQuerier) (*domain.Environment, erro
 	env.IsRDSSuperuser = privileges.IsRDSSuperuser
 	env.IsPGMonitor = privileges.IsPGMonitor
 
-	// Detect data directory (always query for reporting, but don't enable filesystem)
+	// Detect data directory via pg_settings (readable by all roles).
+	// SHOW and current_setting() raise ERROR for non-superusers on restricted
+	// settings like data_directory, which pollutes the postgres log.
 	var dataDir string
-	if err := db.QueryRow(ctx, "SHOW data_directory").Scan(&dataDir); err == nil {
+	if err := db.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = 'data_directory'").Scan(&dataDir); err == nil {
 		env.DataDir = dataDir
 	}
 
@@ -91,12 +93,12 @@ func detectPlatform(ctx context.Context, db domain.DBQuerier, env *domain.Enviro
 		return detectRDSOrAurora(ctx, db)
 	}
 
-	// Zalando operator: archive_command or restore_command references /controller/manager
+	// Kubernetes operator (CNPG, Zalando, etc.): archive_command or restore_command references /controller/manager
 	for _, setting := range []string{"archive_command", "restore_command"} {
 		var val string
 		if err := db.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = $1", setting).Scan(&val); err == nil {
 			if strings.Contains(val, "/controller/manager") {
-				return domain.PlatformZalando
+				return domain.PlatformKubernetes
 			}
 		}
 	}

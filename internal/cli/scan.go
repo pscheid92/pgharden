@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
-	"github.com/pgharden/pgharden/internal/adapter/environment"
-	"github.com/pgharden/pgharden/internal/adapter/postgres"
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/app/scanner"
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/platform/buildinfo"
-	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/adapter/environment"
+	"github.com/pscheid92/pgharden/internal/adapter/postgres"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/scanner"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/platform/buildinfo"
+	"github.com/pscheid92/pgharden/internal/platform/config"
 )
 
 // Connector abstracts the database connection. Production code uses dbConnector;
@@ -40,7 +41,11 @@ func (c *dbConnector) Connect(ctx context.Context, cfg *config.Config) (domain.D
 	if err != nil {
 		return nil, nil, fmt.Errorf("connection failed: %w", err)
 	}
-	closer := func() { _ = conn.Close(ctx) }
+	closer := func() {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = conn.Close(closeCtx)
+	}
 	return conn, closer, nil
 }
 
@@ -101,6 +106,7 @@ func scanOpts(cfg *config.Config) scanner.Options {
 		IncludeChecks:  cfg.IncludeChecks,
 		ExcludeChecks:  cfg.ExcludeChecks,
 		IncludeSection: cfg.IncludeSection,
+		IncludeSource:  cfg.IncludeSource,
 		Meta: report.Metadata{
 			Host:        cfg.Host,
 			Port:        cfg.Port,

@@ -9,14 +9,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/platform/config"
 )
 
 var validPlatforms = []string{
 	domain.PlatformBareMetal,
 	domain.PlatformContainer,
-	domain.PlatformZalando,
+	domain.PlatformKubernetes,
 	domain.PlatformRDS,
 	domain.PlatformAurora,
 }
@@ -36,7 +36,7 @@ func Execute() (int, error) {
 	rootCmd := &cobra.Command{
 		Use:   "pgharden",
 		Short: "PostgreSQL Database Security Assessment Tool",
-		Long:  "Automated security assessment of PostgreSQL databases following CIS Benchmark recommendations.",
+		Long:  "Automated security assessment tool for PostgreSQL databases.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts.FormatExplicit = cmd.Flags().Changed("format")
 			var err error
@@ -75,11 +75,12 @@ func registerFlags(cmd *cobra.Command, cfg *config.Config, opts *RunOptions, con
 	f.StringSliceVar(&cfg.IncludeChecks, "include", nil, "Only run these check IDs")
 	f.StringSliceVar(&cfg.ExcludeChecks, "exclude", nil, "Skip these check IDs")
 	f.StringVar(&cfg.IncludeSection, "section", "", "Only run checks in this section")
+	f.StringVar(&cfg.IncludeSource, "source", "", "Only run checks from this source (e.g., cis)")
 	f.StringSliceVarP(&cfg.AllowDatabases, "allow", "a", nil, "Only check these databases")
 	f.StringSliceVarP(&cfg.ExcludeDatabases, "exclude-db", "e", nil, "Exclude these databases")
 
 	// Environment
-	f.StringVar(&cfg.Platform, "platform", "", "Override platform detection (bare-metal, container, zalando, rds, aurora)")
+	f.StringVar(&cfg.Platform, "platform", "", "Override platform detection (bare-metal, container, kubernetes, rds, aurora)")
 	f.BoolVar(&cfg.Local, "local", false, "Enable filesystem and OS command checks (use only when running on the PostgreSQL host)")
 
 	// Config
@@ -91,6 +92,9 @@ func registerFlags(cmd *cobra.Command, cfg *config.Config, opts *RunOptions, con
 			if err := cfg.LoadFile(*configFile); err != nil {
 				return err
 			}
+		}
+		if err := cfg.ResolveDSN(); err != nil {
+			return err
 		}
 		if cfg.Platform != "" && !slices.Contains(validPlatforms, cfg.Platform) {
 			return fmt.Errorf("invalid platform %q: must be one of %v", cfg.Platform, validPlatforms)

@@ -1,4 +1,4 @@
-module github.com/pgharden/pgharden
+module github.com/pscheid92/pgharden
 
 go 1.26.0
 

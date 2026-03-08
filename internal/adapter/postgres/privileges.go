@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 type Privileges struct {

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/pgharden/pgharden/internal/cli"
+	"github.com/pscheid92/pgharden/internal/cli"
 )
 
 func main() {

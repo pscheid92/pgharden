@@ -58,8 +58,8 @@ func expectFullDetect(mock pgxmock.PgxConnIface, superuser bool) {
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
 
 	// SHOW data_directory
-	mock.ExpectQuery("SHOW data_directory").
-		WillReturnRows(pgxmock.NewRows([]string{"data_directory"}).AddRow("/var/lib/postgresql/data"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings WHERE name = 'data_directory'").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("/var/lib/postgresql/data"))
 
 	// detectPlatform: check rds_superuser role
 	mock.ExpectQuery("SELECT COUNT.*rds_superuser").
@@ -176,7 +176,7 @@ func TestDetect_PlatformBareMetal(t *testing.T) {
 	}
 }
 
-func TestDetect_PlatformZalando(t *testing.T) {
+func TestDetect_PlatformKubernetes(t *testing.T) {
 	mock := newMock(t)
 
 	mock.ExpectQuery("SELECT version").
@@ -188,8 +188,8 @@ func TestDetect_PlatformZalando(t *testing.T) {
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
 	mock.ExpectQuery("SELECT COUNT.*pg_monitor").
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
-	mock.ExpectQuery("SHOW data_directory").
-		WillReturnRows(pgxmock.NewRows([]string{"data_directory"}).AddRow("/home/postgres/pgdata"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings WHERE name = 'data_directory'").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("/home/postgres/pgdata"))
 
 	// detectPlatform: rds_superuser check
 	mock.ExpectQuery("SELECT COUNT.*rds_superuser").
@@ -209,8 +209,8 @@ func TestDetect_PlatformZalando(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if env.Platform != "zalando" {
-		t.Errorf("expected platform=zalando, got %s", env.Platform)
+	if env.Platform != "kubernetes" {
+		t.Errorf("expected platform=kubernetes, got %s", env.Platform)
 	}
 }
 
@@ -226,8 +226,8 @@ func TestDetect_PlatformRDS(t *testing.T) {
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
 	mock.ExpectQuery("SELECT COUNT.*pg_monitor").
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
-	mock.ExpectQuery("SHOW data_directory").
-		WillReturnRows(pgxmock.NewRows([]string{"data_directory"}).AddRow("/rdsdbdata/db"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings WHERE name = 'data_directory'").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("/rdsdbdata/db"))
 
 	// detectPlatform: IsRDSSuperuser=true, so detectRDSOrAurora is called
 	// aurora_version() fails -> RDS
@@ -260,8 +260,8 @@ func TestDetect_PlatformAurora(t *testing.T) {
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
 	mock.ExpectQuery("SELECT COUNT.*pg_monitor").
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
-	mock.ExpectQuery("SHOW data_directory").
-		WillReturnRows(pgxmock.NewRows([]string{"data_directory"}).AddRow("/rdsdbdata/db"))
+	mock.ExpectQuery("SELECT setting FROM pg_settings WHERE name = 'data_directory'").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("/rdsdbdata/db"))
 
 	// detectPlatform: IsRDSSuperuser=true, aurora_version() succeeds -> Aurora
 	mock.ExpectQuery("SELECT aurora_version").

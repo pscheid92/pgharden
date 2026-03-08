@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/pgharden/pgharden/internal/adapter/output"
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/adapter/output"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/platform/config"
 )
 
 type cliReportWriter struct {

@@ -13,8 +13,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/pgharden/pgharden/internal/platform/config"
-	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/platform/config"
+	"github.com/pscheid92/pgharden/internal/app/report"
 )
 
 func startPostgres(t *testing.T, ctx context.Context) (host string, port int) {
