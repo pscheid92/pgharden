@@ -1,6 +1,10 @@
 package report
 
-import "time"
+import (
+	"time"
+
+	"github.com/pscheid92/pgharden/internal/domain"
+)
 
 type Report struct {
 	Metadata   Metadata         `json:"metadata"`
@@ -15,9 +19,10 @@ type Metadata struct {
 	Database        string    `json:"database"`
 	PGVersion       string    `json:"pg_version"`
 	PGVersionMajor  int       `json:"pg_version_major"`
-	EnvironmentType string    `json:"environment_type"`
+	Platform        string    `json:"platform"`
 	ToolVersion     string    `json:"tool_version"`
 	IsSuperuser     bool      `json:"is_superuser"`
+	HasFilesystem   bool      `json:"has_filesystem"`
 }
 
 type Summary struct {
@@ -36,14 +41,15 @@ type CategoryReport struct {
 }
 
 type CheckReport struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Description string     `json:"description,omitempty"`
-	Severity    string     `json:"severity"`
-	Status      string     `json:"status"`
-	Messages    []MsgEntry `json:"messages,omitempty"`
-	Details    [][]string `json:"details,omitempty"`
-	SkipReason string     `json:"skip_reason,omitempty"`
+	ID          string            `json:"id"`
+	Title       string            `json:"title"`
+	Description string            `json:"description,omitempty"`
+	Reference   *domain.Reference `json:"reference,omitempty"`
+	Severity    string            `json:"severity"`
+	Status      string            `json:"status"`
+	Messages    []MsgEntry        `json:"messages,omitempty"`
+	Details     [][]string        `json:"details,omitempty"`
+	SkipReason  string            `json:"skip_reason,omitempty"`
 }
 
 type MsgEntry struct {

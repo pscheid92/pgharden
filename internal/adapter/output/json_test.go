@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/report"
 )
 
 func TestWriteJSON(t *testing.T) {

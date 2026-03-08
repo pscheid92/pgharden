@@ -3,160 +3,304 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>pgharden — PostgreSQL Security Assessment Report</title>
+<title>pgharden — Security Assessment Report</title>
 <style>
 :root {
-  --pass: #28a745;
-  --fail: #dc3545;
-  --warn: #e6a117;
-  --info: #17a2b8;
-  --skip: #6c757d;
-  --bg: #f4f6f9;
-  --card-bg: #fff;
-  --border: #e0e4e8;
-  --text: #1a1a2e;
-  --text-muted: #6b7280;
-  --header-bg: #1e293b;
-  --section-bg: #334155;
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --pass: #16a34a;
+  --pass-bg: #f0fdf4;
+  --pass-border: #bbf7d0;
+  --fail: #dc2626;
+  --fail-bg: #fef2f2;
+  --fail-border: #fecaca;
+  --warn: #d97706;
+  --warn-bg: #fffbeb;
+  --warn-border: #fde68a;
+  --info: #2563eb;
+  --info-bg: #eff6ff;
+  --info-border: #bfdbfe;
+  --skip: #6b7280;
+  --skip-bg: #f9fafb;
+  --skip-border: #e5e7eb;
+  --manual: #7c3aed;
+  --manual-bg: #f5f3ff;
+  --manual-border: #ddd6fe;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --radius: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
 }
-*, *::before, *::after { box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
-/* Header */
-.header { background: var(--header-bg); color: #fff; padding: 28px 0; }
-.header-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 40px; }
-.header h1 { font-size: 1.5em; font-weight: 700; margin: 0; letter-spacing: -0.02em; white-space: nowrap; }
-.header h1 span { font-weight: 400; opacity: 0.7; }
-.header-meta { font-size: 0.82em; opacity: 0.75; text-align: right; line-height: 1.7; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; -webkit-font-smoothing: antialiased; }
 
-/* Container */
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+/* ── Layout ── */
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
 
-/* Summary cards */
-.summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
-.summary-card { background: var(--card-bg); border-radius: var(--radius); padding: 18px 12px; text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border); }
-.summary-card .count { font-size: 2.2em; font-weight: 800; line-height: 1.2; }
-.summary-card .label { font-size: 0.78em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
-.summary-card.total .count { color: var(--text); }
-.summary-card.passed .count { color: var(--pass); }
-.summary-card.failed .count { color: var(--fail); }
-.summary-card.skipped .count { color: var(--skip); }
-.summary-card.manual .count { color: var(--info); }
+/* ── Header ── */
+.header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; padding: 28px 0; }
+.header-inner { display: flex; justify-content: space-between; align-items: center; }
+.header-brand { display: flex; align-items: center; gap: 14px; }
+.header-logo { width: 32px; height: 38px; flex-shrink: 0; display: flex; align-items: center; }
+.header-logo svg { width: 32px; height: 38px; }
+.header-brand h1 { font-size: 1.25em; font-weight: 700; letter-spacing: -0.02em; }
+.header-brand h1 span { font-weight: 400; color: #94a3b8; margin-left: 8px; }
+.header-meta { display: flex; gap: 24px; }
+.hm { font-size: 0.8em; }
+.hm-label { color: #64748b; font-size: 0.85em; }
+.hm-value { color: #e2e8f0; font-weight: 500; }
 
-/* Section */
-.section { background: var(--card-bg); border-radius: var(--radius); margin-bottom: 18px; box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
-.section-header { background: var(--section-bg); color: #fff; padding: 14px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }
-.section-header:hover { background: #3d4f65; }
-.section-header h2 { font-size: 1.05em; font-weight: 600; margin: 0; }
-.section-header .arrow { transition: transform 0.2s; font-size: 0.8em; }
-.section-header.collapsed .arrow { transform: rotate(-90deg); }
-.section-body { }
+/* ── Summary ── */
+.summary { display: flex; gap: 14px; margin: 24px 0; align-items: stretch; }
+.summary-main { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; display: flex; align-items: center; gap: 24px; flex: 1; }
+.ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.ring-wrap svg { transform: rotate(-90deg); width: 80px; height: 80px; }
+.ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 6; }
+.ring-fg { fill: none; stroke-width: 6; stroke-linecap: round; }
+.ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-pct { font-size: 1.35em; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.ring-sub { font-size: 0.6em; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+.score-grid { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 20px; flex: 1; }
+.score-item { display: flex; align-items: center; gap: 8px; }
+.score-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.score-dot.pass { background: var(--pass); }
+.score-dot.fail { background: var(--fail); }
+.score-dot.skip { background: var(--skip); }
+.score-dot.manual { background: var(--manual); }
+.score-num { font-size: 1.1em; font-weight: 700; font-variant-numeric: tabular-nums; }
+.score-name { font-size: 0.82em; color: var(--text-2); }
+.summary-sev { display: flex; flex-direction: column; gap: 8px; }
+.sev-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 10px 20px; text-align: center; min-width: 100px; }
+.sev-card .sv { font-size: 1.3em; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.sev-card .sl { font-size: 0.65em; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.sev-card.crit .sv { color: var(--fail); }
+.sev-card.warn .sv { color: var(--warn); }
+.env-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 24px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 0.85em; }
+.env-item { display: flex; gap: 6px; }
+.env-label { color: var(--text-3); }
+.env-value { color: var(--text); font-weight: 500; }
+.env-tag { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 0.85em; font-weight: 600; }
+.env-tag.yes { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass-border); }
+.env-tag.no { background: var(--skip-bg); color: var(--skip); border: 1px solid var(--skip-border); }
+
+/* ── Toolbar ── */
+.toolbar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+.toolbar-label { font-size: 0.78em; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.fbtn { font-size: 0.78em; padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--text-2); cursor: pointer; font-weight: 500; transition: all 0.15s; user-select: none; }
+.fbtn:hover { border-color: #94a3b8; }
+.fbtn.active { background: var(--text); color: #fff; border-color: var(--text); }
+.fbtn-crit.active { background: var(--fail); border-color: var(--fail); }
+.fbtn-warn.active { background: var(--warn); border-color: var(--warn); }
+.toolbar-right { margin-left: auto; display: flex; gap: 6px; }
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); cursor: pointer; color: var(--text-2); transition: all 0.15s; }
+.btn-icon:hover { border-color: #94a3b8; color: var(--text); }
+.btn-icon svg { width: 15px; height: 15px; }
+
+/* ── Section ── */
+.section { background: var(--card); border-radius: var(--radius); margin-bottom: 14px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+.section-header { padding: 14px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; border-bottom: 1px solid transparent; transition: background 0.15s; }
+.section-header:hover { background: #f8fafc; }
+.section-header.open { border-bottom-color: var(--border); }
+.section-header h2 { font-size: 0.9em; font-weight: 650; display: flex; align-items: center; gap: 10px; }
+.section-num { color: var(--text-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+.sh-right { display: flex; align-items: center; gap: 8px; }
+.sh-stat { font-size: 0.7em; padding: 2px 10px; border-radius: 12px; font-weight: 600; }
+.sh-pass { background: var(--pass-bg); color: var(--pass); }
+.sh-fail { background: var(--fail-bg); color: var(--fail); }
+.sh-skip { background: var(--skip-bg); color: var(--skip); }
+.sh-manual { background: var(--manual-bg); color: var(--manual); }
+.sh-arrow { width: 18px; height: 18px; color: var(--text-3); transition: transform 0.2s; flex-shrink: 0; }
+.section-header.collapsed .sh-arrow { transform: rotate(-90deg); }
 .section-body.hidden { display: none; }
 
-/* Check row */
-.check { border-bottom: 1px solid var(--border); }
+/* ── Check row ── */
+.check { border-bottom: 1px solid #f1f5f9; }
 .check:last-child { border-bottom: none; }
-.check-row { padding: 10px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; }
-.check-row:hover { background: #f8f9fb; }
+.check-row { padding: 9px 20px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.1s; }
+.check-row:hover { background: #f8fafc; }
+.check[data-status="SKIPPED"] { opacity: 0.55; }
+.check.filtered-out { display: none; }
 
-/* Status badge */
-.badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; }
-.badge svg { display: block; }
-.badge.success { background: var(--pass); }
-.badge.danger { background: var(--fail); }
-.badge.secondary { background: var(--skip); }
-.badge.info { background: var(--info); }
-.badge.warning { background: var(--warn); }
+/* Status indicator */
+.sdot { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sdot svg { width: 12px; height: 12px; }
+.sdot.pass { background: var(--pass); color: #fff; }
+.sdot.fail { background: var(--fail); color: #fff; }
+.sdot.skip { background: #cbd5e1; color: #fff; }
+.sdot.manual { background: var(--manual); color: #fff; }
+.sdot.warn { background: var(--warn); color: #fff; }
 
-/* Check ID and title */
-.check-id { font-weight: 600; font-size: 0.88em; color: var(--text-muted); min-width: 55px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-.check-title { flex: 1; min-width: 0; font-size: 0.92em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.severity-tag { font-size: 0.7em; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em; flex-shrink: 0; white-space: nowrap; }
-.severity-tag.danger { background: #fde8e8; color: #b91c1c; }
-.severity-tag.warning { background: #fef3c7; color: #92400e; }
-.severity-tag.info { background: #dbeafe; color: #1e40af; }
+.check-id { font-size: 0.8em; color: var(--text-3); min-width: 50px; font-variant-numeric: tabular-nums; font-weight: 500; flex-shrink: 0; }
+.check-title { flex: 1; font-size: 0.87em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.check-tags { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
+.tag { font-size: 0.62em; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.tag.sev-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail-border); }
+.tag.sev-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+.tag.sev-info { background: var(--info-bg); color: var(--info); border: 1px solid var(--info-border); }
+.tag.src { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; font-weight: 500; }
 
-/* Check detail panel */
-.check-detail { padding: 8px 20px 16px 58px; display: none; border-top: 1px solid #f0f0f0; background: #fafbfc; }
+/* ── Detail panel ── */
+.check-detail { display: none; padding: 10px 20px 14px 52px; background: #fafbfd; border-top: 1px solid #f1f5f9; }
 .check-detail.open { display: block; }
-.check-detail .desc { color: var(--text-muted); margin-bottom: 8px; font-size: 0.88em; line-height: 1.5; }
-.check-detail .skip-reason { color: var(--skip); font-style: italic; font-size: 0.88em; }
+.detail-desc { color: var(--text-2); font-size: 0.84em; line-height: 1.6; margin-bottom: 8px; }
+.detail-ref { display: inline-flex; align-items: center; gap: 6px; font-size: 0.76em; color: var(--text-3); margin-bottom: 8px; }
+.detail-ref svg { width: 12px; height: 12px; flex-shrink: 0; }
+.detail-skip { color: var(--skip); font-style: italic; font-size: 0.84em; padding: 6px 12px; background: var(--skip-bg); border-radius: 8px; border: 1px solid var(--skip-border); }
 
 /* Messages */
-.msg { padding: 7px 12px; margin: 4px 0; border-radius: 6px; font-size: 0.85em; line-height: 1.5; }
-.msg b { font-weight: 600; }
-.msg.SUCCESS { background: #ecfdf5; color: #065f46; border-left: 3px solid var(--pass); }
-.msg.FAILURE, .msg.CRITICAL, .msg.ERROR { background: #fef2f2; color: #991b1b; border-left: 3px solid var(--fail); }
-.msg.WARNING { background: #fffbeb; color: #92400e; border-left: 3px solid var(--warn); }
-.msg.INFO { background: #eff6ff; color: #1e40af; border-left: 3px solid var(--info); }
+.msg { padding: 7px 12px; margin: 3px 0; border-radius: 6px; font-size: 0.82em; line-height: 1.5; display: flex; align-items: baseline; gap: 8px; }
+.msg-level { font-weight: 700; font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0; }
+.msg.SUCCESS { background: var(--pass-bg); color: #065f46; border: 1px solid var(--pass-border); }
+.msg.SUCCESS .msg-level { color: var(--pass); }
+.msg.FAILURE, .msg.CRITICAL, .msg.ERROR { background: var(--fail-bg); color: #991b1b; border: 1px solid var(--fail-border); }
+.msg.FAILURE .msg-level, .msg.CRITICAL .msg-level, .msg.ERROR .msg-level { color: var(--fail); }
+.msg.WARNING { background: var(--warn-bg); color: #92400e; border: 1px solid var(--warn-border); }
+.msg.WARNING .msg-level { color: var(--warn); }
+.msg.INFO { background: var(--info-bg); color: #1e40af; border: 1px solid var(--info-border); }
+.msg.INFO .msg-level { color: var(--info); }
 
 /* Detail tables */
-table.detail-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.82em; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
-table.detail-table th, table.detail-table td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-table.detail-table th { background: #f1f5f9; font-weight: 600; color: var(--text); }
-table.detail-table tr:last-child td { border-bottom: none; }
-table.detail-table tr:hover td { background: #f8fafc; }
+table.dtbl { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.8em; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+table.dtbl th, table.dtbl td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+table.dtbl th { background: #f1f5f9; font-weight: 600; color: var(--text); font-size: 0.92em; }
+table.dtbl tr:last-child td { border-bottom: none; }
+table.dtbl tr:hover td { background: #f8fafc; }
 
-/* Footer */
-.footer { text-align: center; padding: 28px; color: var(--text-muted); font-size: 0.82em; }
+/* ── Footer ── */
+.footer { text-align: center; padding: 28px 20px; color: var(--text-3); font-size: 0.76em; }
+.footer a { color: var(--text-2); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
 
-/* Responsive */
-@media (max-width: 700px) {
-  .summary { grid-template-columns: repeat(3, 1fr); }
-  .check-row { padding: 10px 14px; gap: 8px; }
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header-inner { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .header-meta { flex-wrap: wrap; gap: 12px; }
+  .summary { flex-direction: column; }
+  .summary-sev { flex-direction: row; }
+  .score-grid { grid-template-columns: repeat(2, auto); }
+  .check-row { padding: 9px 14px; gap: 8px; }
   .check-title { white-space: normal; }
-  .check-detail { padding-left: 48px; }
+  .check-detail { padding-left: 42px; }
+  .check-tags .tag.src { display: none; }
 }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-inner">
-    <h1>pgharden <span>Security Assessment Report</span></h1>
-    <div class="header-meta">
-      <div>{{.Metadata.Host}}:{{.Metadata.Port}} &middot; {{.Metadata.Database}}</div>
-      <div>{{.Metadata.Timestamp.Format "2006-01-02 15:04:05 UTC"}} &middot; pgharden {{.Metadata.ToolVersion}}</div>
-      <div>{{.Metadata.PGVersion}}</div>
+  <div class="wrap">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="header-logo"><svg viewBox="60 20 392 470" fill="none"><defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5EAAC8"/><stop offset="100%" stop-color="#2A7A9A"/></linearGradient><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#D0E2EA"/></linearGradient></defs><path d="M256 24L72 72L72 240C72 368 256 488 256 488C256 488 440 368 440 240L440 72Z" fill="url(#sg)" stroke="#1E4D63" stroke-width="10" stroke-linejoin="round"/><path d="M206 215L206 168C206 122 226 96 256 96C286 96 306 122 306 168L306 215" fill="none" stroke="url(#lg)" stroke-width="18" stroke-linecap="round"/><rect x="186" y="215" width="140" height="108" rx="14" fill="url(#lg)"/><text x="256" y="290" text-anchor="middle" font-family="ui-monospace,monospace" font-size="64" font-weight="800" fill="#1E4D63" letter-spacing="-1">pg</text></svg></div>
+        <h1>pgharden<span>Security Assessment</span></h1>
+      </div>
+      <div class="header-meta">
+        <div class="hm"><span class="hm-label">Server </span><span class="hm-value">{{.Metadata.Host}}:{{.Metadata.Port}}</span></div>
+        <div class="hm"><span class="hm-label">Database </span><span class="hm-value">{{.Metadata.Database}}</span></div>
+        <div class="hm"><span class="hm-label">Scanned </span><span class="hm-value">{{.Metadata.Timestamp.Format "2006-01-02 15:04 UTC"}}</span></div>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="container">
+<div class="wrap">
 
+<!-- Summary -->
 <div class="summary">
-  <div class="summary-card total"><div class="count">{{.Summary.Total}}</div><div class="label">Total</div></div>
-  <div class="summary-card passed"><div class="count">{{.Summary.Passed}}</div><div class="label">Passed</div></div>
-  <div class="summary-card failed"><div class="count">{{.Summary.Failed}}</div><div class="label">Failed</div></div>
-  <div class="summary-card skipped"><div class="count">{{.Summary.Skipped}}</div><div class="label">Skipped</div></div>
-  <div class="summary-card manual"><div class="count">{{.Summary.Manual}}</div><div class="label">Manual</div></div>
+  <div class="summary-main">
+    {{$pct := passPercent .Summary}}
+    <div class="ring-wrap">
+      <svg viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" cx="40" cy="40" r="34"
+          stroke="{{if ge $pct 80}}var(--pass){{else if ge $pct 50}}var(--warn){{else}}var(--fail){{end}}"
+          stroke-dasharray="213.6"
+          stroke-dashoffset="{{if eq .Summary.Total 0}}0{{else}}{{printf "%.1f" (mul (sub 100.0 (toFloat $pct)) 2.136)}}{{end}}"/>
+      </svg>
+      <div class="ring-label">
+        <div class="ring-pct">{{$pct}}%</div>
+        <div class="ring-sub">pass</div>
+      </div>
+    </div>
+    <div class="score-grid">
+      <div class="score-item"><span class="score-dot pass"></span><span class="score-num">{{.Summary.Passed}}</span><span class="score-name">Passed</span></div>
+      <div class="score-item"><span class="score-dot fail"></span><span class="score-num">{{.Summary.Failed}}</span><span class="score-name">Failed</span></div>
+      <div class="score-item"><span class="score-dot skip"></span><span class="score-num">{{.Summary.Skipped}}</span><span class="score-name">Skipped</span></div>
+      <div class="score-item"><span class="score-dot manual"></span><span class="score-num">{{.Summary.Manual}}</span><span class="score-name">Manual</span></div>
+    </div>
+  </div>
+  <div class="summary-sev">
+    <div class="sev-card crit"><div class="sv">{{index .Summary.BySeverity "CRITICAL"}}</div><div class="sl">Critical</div></div>
+    <div class="sev-card warn"><div class="sv">{{index .Summary.BySeverity "WARNING"}}</div><div class="sl">Warnings</div></div>
+  </div>
 </div>
 
+<!-- Environment -->
+<div class="env-card">
+  <div class="env-item"><span class="env-label">PostgreSQL</span> <span class="env-value">{{.Metadata.PGVersion}}</span></div>
+  <div class="env-item"><span class="env-label">Platform</span> <span class="env-value">{{.Metadata.Platform}}</span></div>
+  <div class="env-item"><span class="env-label">Superuser</span> <span class="env-tag {{if .Metadata.IsSuperuser}}yes{{else}}no{{end}}">{{if .Metadata.IsSuperuser}}yes{{else}}no{{end}}</span></div>
+  <div class="env-item"><span class="env-label">Filesystem</span> <span class="env-tag {{if .Metadata.HasFilesystem}}yes{{else}}no{{end}}">{{if .Metadata.HasFilesystem}}yes{{else}}no{{end}}</span></div>
+</div>
+
+<!-- Filters -->
+<div class="toolbar">
+  <span class="toolbar-label">Filter</span>
+  <button class="fbtn active" onclick="setFilter('all',this)">All ({{.Summary.Total}})</button>
+  <button class="fbtn" onclick="setFilter('PASS',this)">Passed</button>
+  <button class="fbtn fbtn-crit" onclick="setFilter('CRITICAL',this)">Critical ({{index .Summary.BySeverity "CRITICAL"}})</button>
+  <button class="fbtn fbtn-warn" onclick="setFilter('WARNING',this)">Warning ({{index .Summary.BySeverity "WARNING"}})</button>
+  <button class="fbtn" onclick="setFilter('SKIPPED',this)">Skipped</button>
+  <button class="fbtn" onclick="setFilter('MANUAL',this)">Manual</button>
+  <div class="toolbar-right">
+    <button class="btn-icon" onclick="expandAll()" title="Expand all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+    </button>
+    <button class="btn-icon" onclick="collapseAll()" title="Collapse all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Sections -->
 {{range .Categories}}
-<div class="section">
-  <div class="section-header" onclick="toggleSection(this)">
-    <h2>{{.ID}}. {{.Title}}</h2>
-    <span class="arrow">&#9660;</span>
+<div class="section" data-section="{{.ID}}">
+  <div class="section-header open" onclick="toggleSection(this)">
+    <h2><span class="section-num">{{.ID}}</span> {{.Title}}</h2>
+    <div class="sh-right">
+      {{sectionStats .Checks}}
+      <svg class="sh-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   </div>
   <div class="section-body">
     {{range .Checks}}
-    <div class="check">
+    <div class="check" data-status="{{.Status}}" data-severity="{{.Severity}}" data-source="{{refSource .Reference}}">
       <div class="check-row" onclick="toggleDetail(this)">
-        <span class="badge {{statusClass .Status}}">{{statusIcon .Status}}</span>
+        <span class="sdot {{statusClass .Status}}">{{statusIcon .Status}}</span>
         <span class="check-id">{{.ID}}</span>
         <span class="check-title" title="{{.Title}}">{{.Title}}</span>
-        {{if and (ne .Severity "") (ne .Severity "INFO")}}<span class="severity-tag {{severityClass .Severity}}">{{.Severity}}</span>{{end}}
+        <span class="check-tags">
+          {{if .Reference}}<span class="tag src">{{.Reference.ID}}</span>{{end}}
+          {{if and (ne .Severity "") (eq .Status "FAIL")}}<span class="tag sev-{{severityClass .Severity}}">{{.Severity}}</span>{{end}}
+        </span>
       </div>
       <div class="check-detail">
-        {{if .Description}}<div class="desc">{{.Description}}</div>{{end}}
-        {{if .SkipReason}}<div class="skip-reason">Skipped: {{.SkipReason}}</div>{{end}}
+        {{if .Description}}<div class="detail-desc">{{.Description}}</div>{{end}}
+        {{if .Reference}}<div class="detail-ref">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+          {{.Reference.Source}} &mdash; {{.Reference.ID}}
+        </div>{{end}}
+        {{if .SkipReason}}<div class="detail-skip">{{.SkipReason}}</div>{{end}}
         {{range .Messages}}
-        <div class="msg {{.Level}}"><b>{{.Level}}:</b> {{.Content}}</div>
+        <div class="msg {{.Level}}"><span class="msg-level">{{.Level}}</span> {{.Content}}</div>
         {{end}}
         {{if hasDetails .Details}}
-        <table class="detail-table">
+        <table class="dtbl">
           {{range $i, $row := .Details}}
           <tr>
             {{if isHeader $i}}
@@ -178,17 +322,37 @@ table.detail-table tr:hover td { background: #f8fafc; }
 </div>
 
 <div class="footer">
-  Generated by pgharden {{.Metadata.ToolVersion}} &mdash; PostgreSQL Database Security Assessment Tool
+  Generated by <a href="https://github.com/pscheid92/pgharden">pgharden</a> {{.Metadata.ToolVersion}}
 </div>
 
 <script>
 function toggleSection(el) {
+  el.classList.toggle('open');
   el.classList.toggle('collapsed');
-  var body = el.nextElementSibling;
-  body.classList.toggle('hidden');
+  el.nextElementSibling.classList.toggle('hidden');
 }
 function toggleDetail(el) {
   el.nextElementSibling.classList.toggle('open');
+}
+function expandAll() {
+  document.querySelectorAll('.section-header:not(.open)').forEach(function(h) { toggleSection(h); });
+}
+function collapseAll() {
+  document.querySelectorAll('.section-header.open').forEach(function(h) { toggleSection(h); });
+}
+function setFilter(filter, btn) {
+  document.querySelectorAll('.fbtn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  var isSev = filter === 'CRITICAL' || filter === 'WARNING';
+  document.querySelectorAll('.check').forEach(function(c) {
+    var match = filter === 'all' ||
+      (isSev ? (c.dataset.status === 'FAIL' && c.dataset.severity === filter) : c.dataset.status === filter);
+    if (match) { c.classList.remove('filtered-out'); } else { c.classList.add('filtered-out'); }
+  });
+  document.querySelectorAll('.section').forEach(function(s) {
+    var visible = s.querySelectorAll('.check:not(.filtered-out)');
+    s.style.display = visible.length ? '' : 'none';
+  });
 }
 </script>
 </body>

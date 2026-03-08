@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/report"
 )
 
 const (
@@ -32,6 +32,23 @@ func WriteText(w io.Writer, r *report.Report, color bool) error {
 
 	tw := &textWriter{w: w}
 
+	m := r.Metadata
+	tw.printf("%spgharden — Security Assessment%s\n", c.bold, c.reset)
+	tw.printf("  %sServer%s      %s:%d\n", c.gray, c.reset, m.Host, m.Port)
+	tw.printf("  %sDatabase%s    %s\n", c.gray, c.reset, m.Database)
+	tw.printf("  %sPostgreSQL%s  %s\n", c.gray, c.reset, m.PGVersion)
+	tw.printf("  %sPlatform%s    %s\n", c.gray, c.reset, m.Platform)
+	su := "no"
+	if m.IsSuperuser {
+		su = "yes"
+	}
+	fs := "no"
+	if m.HasFilesystem {
+		fs = "yes"
+	}
+	tw.printf("  %sSuperuser%s   %s\n", c.gray, c.reset, su)
+	tw.printf("  %sFilesystem%s  %s\n", c.gray, c.reset, fs)
+
 	for _, cat := range r.Categories {
 		if color {
 			tw.printf("\n%s=== %s: %s ===%s\n", c.bold, cat.ID, cat.Title, c.reset)
@@ -47,6 +64,10 @@ func WriteText(w io.Writer, r *report.Report, color bool) error {
 			}
 
 			tw.printf("  %s%-8s%s %s  %s\n", prefixColor, prefix, c.reset, check.ID, title)
+
+			if check.Reference != nil {
+				tw.printf("           %sSource: %s [%s]%s\n", c.gray, check.Reference.Source, check.Reference.ID, c.reset)
+			}
 
 			for _, msg := range check.Messages {
 				msgColor := messageLevelColor(msg.Level, c)

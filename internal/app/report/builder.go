@@ -4,8 +4,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/platform/labels"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/platform/labels"
 )
 
 func Build(results []domain.RunResult, env *domain.Environment, meta Metadata) *Report {
@@ -13,9 +13,9 @@ func Build(results []domain.RunResult, env *domain.Environment, meta Metadata) *
 	if env != nil {
 		meta.PGVersion = env.PGVersionFull
 		meta.PGVersionMajor = env.PGVersion
+		meta.Platform = env.Platform
 		meta.IsSuperuser = env.IsSuperuser
-
-		meta.EnvironmentType = env.Platform
+		meta.HasFilesystem = env.HasFilesystem
 	}
 
 	r := &Report{
@@ -43,6 +43,7 @@ func Build(results []domain.RunResult, env *domain.Environment, meta Metadata) *
 			ID:          rr.CheckID,
 			Title:       labels.CheckTitle(rr.CheckID),
 			Description: labels.CheckDescription(rr.CheckID),
+			Reference:   rr.Reference,
 		}
 
 		cr.Status = rr.Result.Status.String()

@@ -2,10 +2,12 @@ package output
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io"
 
-	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 //go:embed templates/report.html.tmpl
@@ -16,33 +18,28 @@ func WriteHTML(w io.Writer, r *report.Report) error {
 		"statusClass": func(status string) string {
 			switch status {
 			case "PASS":
-				return "success"
+				return "pass"
 			case "FAIL":
-				return "danger"
+				return "fail"
 			case "SKIPPED":
-				return "secondary"
+				return "skip"
 			case "MANUAL":
-				return "info"
+				return "manual"
 			default:
-				return "warning"
+				return "warn"
 			}
 		},
 		"statusIcon": func(status string) template.HTML {
-			// Inline SVGs for pixel-perfect rendering across all platforms.
-			const sz = `width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`
+			const sz = `width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`
 			switch status {
 			case "PASS":
-				// Checkmark
 				return template.HTML(`<svg ` + sz + `><polyline points="4 12 10 18 20 6"/></svg>`)
 			case "FAIL":
-				// X
 				return template.HTML(`<svg ` + sz + `><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`)
 			case "SKIPPED":
-				// Dash
 				return template.HTML(`<svg ` + sz + `><line x1="5" y1="12" x2="19" y2="12"/></svg>`)
 			case "MANUAL":
-				// Eye
-				return template.HTML(`<svg ` + sz + ` stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`)
+				return template.HTML(`<svg ` + sz + `><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`)
 			default:
 				return "?"
 			}
@@ -50,9 +47,9 @@ func WriteHTML(w io.Writer, r *report.Report) error {
 		"severityClass": func(severity string) string {
 			switch severity {
 			case "CRITICAL":
-				return "danger"
+				return "fail"
 			case "WARNING":
-				return "warning"
+				return "warn"
 			default:
 				return "info"
 			}
@@ -62,6 +59,57 @@ func WriteHTML(w io.Writer, r *report.Report) error {
 		},
 		"isHeader": func(i int) bool {
 			return i == 0
+		},
+		"passPercent": func(s report.Summary) int {
+			evaluated := s.Passed + s.Failed
+			if evaluated == 0 {
+				return 100
+			}
+			return (s.Passed * 100) / evaluated
+		},
+		"sectionStats": func(checks []report.CheckReport) template.HTML {
+			var pass, fail, skip, manual int
+			for _, c := range checks {
+				switch c.Status {
+				case "PASS":
+					pass++
+				case "FAIL":
+					fail++
+				case "SKIPPED":
+					skip++
+				case "MANUAL":
+					manual++
+				}
+			}
+			var s string
+			if pass > 0 {
+				s += fmt.Sprintf(`<span class="sh-stat sh-pass">%d passed</span>`, pass)
+			}
+			if fail > 0 {
+				s += fmt.Sprintf(`<span class="sh-stat sh-fail">%d failed</span>`, fail)
+			}
+			if skip > 0 {
+				s += fmt.Sprintf(`<span class="sh-stat sh-skip">%d skipped</span>`, skip)
+			}
+			if manual > 0 {
+				s += fmt.Sprintf(`<span class="sh-stat sh-manual">%d manual</span>`, manual)
+			}
+			return template.HTML(s)
+		},
+		"refSource": func(ref *domain.Reference) string {
+			if ref == nil {
+				return ""
+			}
+			return ref.Source
+		},
+		"mul": func(a, b float64) float64 {
+			return a * b
+		},
+		"sub": func(a, b float64) float64 {
+			return a - b
+		},
+		"toFloat": func(i int) float64 {
+			return float64(i)
 		},
 	}
 

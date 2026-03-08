@@ -3,7 +3,7 @@ package output
 import (
 	"encoding/json"
 
-	"github.com/pgharden/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/report"
 	"io"
 )
 

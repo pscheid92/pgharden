@@ -3,7 +3,7 @@ package report
 import (
 	"testing"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func TestBuildSummaryCounts(t *testing.T) {
