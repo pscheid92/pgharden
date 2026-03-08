@@ -143,7 +143,7 @@ func TestIsManagedCloud(t *testing.T) {
 		{PlatformAurora, true},
 		{PlatformBareMetal, false},
 		{PlatformContainer, false},
-		{PlatformZalando, false},
+		{PlatformKubernetes, false},
 		{"", false},
 	}
 	for _, tt := range tests {

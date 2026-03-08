@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func Checks() []domain.Check {
@@ -21,12 +21,40 @@ func Checks() []domain.Check {
 		&check_6_9{},
 		&check_6_10{},
 		&check_6_11{},
+		&domain.SettingCheck{
+			CheckID:    "6.12",
+			Setting:    "idle_in_transaction_session_timeout",
+			Expected:   "0",
+			Comparator: "neq",
+			Sev:        domain.SeverityWarning,
+			Reqs:       domain.CheckRequirements{SQLOnly: true},
+			Ref:        domain.CISRef("6.12"),
+		},
+		&domain.SettingCheck{
+			CheckID:    "6.13",
+			Setting:    "statement_timeout",
+			Expected:   "0",
+			Comparator: "neq",
+			Sev:        domain.SeverityWarning,
+			Reqs:       domain.CheckRequirements{SQLOnly: true},
+			Ref:        domain.CISRef("6.13"),
+		},
+		&domain.SettingCheck{
+			CheckID:    "6.14",
+			Setting:    "lock_timeout",
+			Expected:   "0",
+			Comparator: "neq",
+			Sev:        domain.SeverityWarning,
+			Reqs:       domain.CheckRequirements{SQLOnly: true},
+			Ref:        domain.CISRef("6.14"),
+		},
 	}
 }
 
 type check_6_2 struct{}
 
-func (c *check_6_2) ID() string { return "6.2" }
+func (c *check_6_2) ID() string                       { return "6.2" }
+func (c *check_6_2) Reference() *domain.Reference      { return domain.CISRef("6.2") }
 
 func (c *check_6_2) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -93,7 +121,8 @@ type contextParamCheck struct {
 	context string
 }
 
-func (c *contextParamCheck) ID() string { return c.id }
+func (c *contextParamCheck) ID() string                       { return c.id }
+func (c *contextParamCheck) Reference() *domain.Reference      { return domain.CISRef(c.id) }
 
 func (c *contextParamCheck) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -134,7 +163,8 @@ func (c *contextParamCheck) Run(ctx context.Context, env *domain.Environment) (*
 
 type check_6_7 struct{}
 
-func (c *check_6_7) ID() string { return "6.7" }
+func (c *check_6_7) ID() string                       { return "6.7" }
+func (c *check_6_7) Reference() *domain.Reference      { return domain.CISRef("6.7") }
 
 func (c *check_6_7) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Commands: []string{"fips-mode-setup"}, SkipPlatforms: domain.NonBareMetal}
@@ -161,7 +191,8 @@ func (c *check_6_7) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_6_8 struct{}
 
-func (c *check_6_8) ID() string { return "6.8" }
+func (c *check_6_8) ID() string                       { return "6.8" }
+func (c *check_6_8) Reference() *domain.Reference      { return domain.CISRef("6.8") }
 
 func (c *check_6_8) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -221,7 +252,8 @@ func (c *check_6_8) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_6_9 struct{}
 
-func (c *check_6_9) ID() string { return "6.9" }
+func (c *check_6_9) ID() string                       { return "6.9" }
+func (c *check_6_9) Reference() *domain.Reference      { return domain.CISRef("6.9") }
 
 func (c *check_6_9) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -275,7 +307,8 @@ func (c *check_6_9) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_6_10 struct{}
 
-func (c *check_6_10) ID() string { return "6.10" }
+func (c *check_6_10) ID() string                       { return "6.10" }
+func (c *check_6_10) Reference() *domain.Reference      { return domain.CISRef("6.10") }
 
 func (c *check_6_10) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -339,7 +372,8 @@ func (c *check_6_10) Run(ctx context.Context, env *domain.Environment) (*domain.
 
 type check_6_11 struct{}
 
-func (c *check_6_11) ID() string { return "6.11" }
+func (c *check_6_11) ID() string                       { return "6.11" }
+func (c *check_6_11) Reference() *domain.Reference      { return domain.CISRef("6.11") }
 
 func (c *check_6_11) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}

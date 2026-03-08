@@ -6,8 +6,8 @@ import (
 
 	"github.com/pashagolub/pgxmock/v4"
 
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func newPgxMock(t *testing.T) pgxmock.PgxConnIface {

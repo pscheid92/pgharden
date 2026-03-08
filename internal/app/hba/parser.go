@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func LoadFromFile(fsys fs.FS, path string) ([]Entry, error) {

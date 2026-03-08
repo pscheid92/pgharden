@@ -14,10 +14,15 @@ type SettingCheck struct {
 	Comparator string            // "eq" (default), "neq", "contains", "oneof"
 	Sev        Severity          // Severity level for failures
 	Reqs       CheckRequirements // Requirements for this check
+	Ref        *Reference        // Source reference (e.g., CIS Benchmark)
 }
 
 func (c *SettingCheck) ID() string {
 	return c.CheckID
+}
+
+func (c *SettingCheck) Reference() *Reference {
+	return c.Ref
 }
 
 func (c *SettingCheck) Requirements() CheckRequirements {

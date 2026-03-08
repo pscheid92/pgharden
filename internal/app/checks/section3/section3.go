@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 var (
@@ -27,36 +27,37 @@ func Checks() []domain.Check {
 }
 
 var settingChecks = []domain.SettingCheck{
-	{CheckID: "3.1.2", Setting: "log_destination", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.4", Setting: "log_directory", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnlyCloudNA},
-	{CheckID: "3.1.5", Setting: "log_filename", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnlyCloudNA},
-	{CheckID: "3.1.6", Setting: "log_file_mode", Expected: "0600", Sev: domain.SeverityWarning, Reqs: sqlOnlyCloudNA},
-	{CheckID: "3.1.7", Setting: "log_truncate_on_rotation", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA},
-	{CheckID: "3.1.8", Setting: "log_rotation_age", Expected: "1d", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA},
-	{CheckID: "3.1.9", Setting: "log_rotation_size", Comparator: "oneof", Expected: "1GB,1048576kB", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA},
-	{CheckID: "3.1.10", Setting: "syslog_facility", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnly},
-	{CheckID: "3.1.11", Setting: "syslog_sequence_numbers", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.12", Setting: "syslog_split_messages", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.13", Setting: "syslog_ident", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.14", Setting: "log_min_messages", Expected: "warning", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.15", Setting: "log_min_error_statement", Expected: "error", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.16", Setting: "debug_print_parse", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.17", Setting: "debug_print_rewritten", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.18", Setting: "debug_print_plan", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.19", Setting: "debug_pretty_print", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.20", Setting: "log_connections", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.21", Setting: "log_disconnections", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.23", Setting: "log_statement", Comparator: "oneof", Expected: "ddl,all", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.24", Setting: "log_timezone", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnly},
-	{CheckID: "3.1.25", Setting: "log_error_verbosity", Expected: "verbose", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.26", Setting: "log_hostname", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly},
-	{CheckID: "3.1.27", Setting: "log_duration", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly},
+	{CheckID: "3.1.2", Setting: "log_destination", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.2")},
+	{CheckID: "3.1.4", Setting: "log_directory", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnlyCloudNA, Ref: domain.CISRef("3.1.4")},
+	{CheckID: "3.1.5", Setting: "log_filename", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnlyCloudNA, Ref: domain.CISRef("3.1.5")},
+	{CheckID: "3.1.6", Setting: "log_file_mode", Expected: "0600", Sev: domain.SeverityWarning, Reqs: sqlOnlyCloudNA, Ref: domain.CISRef("3.1.6")},
+	{CheckID: "3.1.7", Setting: "log_truncate_on_rotation", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA, Ref: domain.CISRef("3.1.7")},
+	{CheckID: "3.1.8", Setting: "log_rotation_age", Expected: "1d", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA, Ref: domain.CISRef("3.1.8")},
+	{CheckID: "3.1.9", Setting: "log_rotation_size", Comparator: "oneof", Expected: "1GB,1048576kB", Sev: domain.SeverityWarning, Reqs: sqlOnlyLocalNA, Ref: domain.CISRef("3.1.9")},
+	{CheckID: "3.1.10", Setting: "syslog_facility", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnly, Ref: domain.CISRef("3.1.10")},
+	{CheckID: "3.1.11", Setting: "syslog_sequence_numbers", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.11")},
+	{CheckID: "3.1.12", Setting: "syslog_split_messages", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.12")},
+	{CheckID: "3.1.13", Setting: "syslog_ident", Comparator: "neq", Expected: "", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.13")},
+	{CheckID: "3.1.14", Setting: "log_min_messages", Expected: "warning", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.14")},
+	{CheckID: "3.1.15", Setting: "log_min_error_statement", Expected: "error", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.15")},
+	{CheckID: "3.1.16", Setting: "debug_print_parse", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.16")},
+	{CheckID: "3.1.17", Setting: "debug_print_rewritten", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.17")},
+	{CheckID: "3.1.18", Setting: "debug_print_plan", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.18")},
+	{CheckID: "3.1.19", Setting: "debug_pretty_print", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.19")},
+	{CheckID: "3.1.20", Setting: "log_connections", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.20")},
+	{CheckID: "3.1.21", Setting: "log_disconnections", Expected: "on", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.21")},
+	{CheckID: "3.1.23", Setting: "log_statement", Comparator: "oneof", Expected: "ddl,all", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.23")},
+	{CheckID: "3.1.24", Setting: "log_timezone", Comparator: "neq", Expected: "", Sev: domain.SeverityInfo, Reqs: sqlOnly, Ref: domain.CISRef("3.1.24")},
+	{CheckID: "3.1.25", Setting: "log_error_verbosity", Expected: "verbose", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.25")},
+	{CheckID: "3.1.26", Setting: "log_hostname", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.26")},
+	{CheckID: "3.1.27", Setting: "log_duration", Expected: "off", Sev: domain.SeverityWarning, Reqs: sqlOnly, Ref: domain.CISRef("3.1.27")},
 }
 
-// 3.1.3: logging_collector — on for bare-metal, off acceptable on container/zalando/rds/aurora.
+// 3.1.3: logging_collector — on for bare-metal, off acceptable on container/kubernetes/rds/aurora.
 type check_3_1_3 struct{}
 
-func (c *check_3_1_3) ID() string { return "3.1.3" }
+func (c *check_3_1_3) ID() string                        { return "3.1.3" }
+func (c *check_3_1_3) Reference() *domain.Reference       { return domain.CISRef("3.1.3") }
 
 func (c *check_3_1_3) Requirements() domain.CheckRequirements { return sqlOnly }
 
@@ -85,7 +86,8 @@ func (c *check_3_1_3) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_3_2 struct{}
 
-func (c *check_3_2) ID() string { return "3.2" }
+func (c *check_3_2) ID() string                        { return "3.2" }
+func (c *check_3_2) Reference() *domain.Reference       { return domain.CISRef("3.2") }
 
 func (c *check_3_2) Requirements() domain.CheckRequirements { return sqlOnly }
 
@@ -165,7 +167,8 @@ func (c *check_3_2) checkViaExtension(ctx context.Context, env *domain.Environme
 
 type check_3_1_22 struct{}
 
-func (c *check_3_1_22) ID() string { return "3.1.22" }
+func (c *check_3_1_22) ID() string                        { return "3.1.22" }
+func (c *check_3_1_22) Reference() *domain.Reference       { return domain.CISRef("3.1.22") }
 
 func (c *check_3_1_22) Requirements() domain.CheckRequirements { return sqlOnly }
 

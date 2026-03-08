@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *domain.Environment) {
@@ -505,7 +505,7 @@ func TestCheck_5_12_MD5(t *testing.T) {
 	}
 }
 
-// --- 5.2: container/zalando accept * ---
+// --- 5.2: container/kubernetes accept * ---
 
 func TestCheck_5_2_ContainerAcceptsStar(t *testing.T) {
 	mock, env := newMockEnv(t)
@@ -524,9 +524,9 @@ func TestCheck_5_2_ContainerAcceptsStar(t *testing.T) {
 	}
 }
 
-func TestCheck_5_2_ZalandoAcceptsStar(t *testing.T) {
+func TestCheck_5_2_KubernetesAcceptsStar(t *testing.T) {
 	mock, env := newMockEnv(t)
-	env.Platform = domain.PlatformZalando
+	env.Platform = domain.PlatformKubernetes
 	mock.ExpectQuery("SELECT setting FROM pg_settings").
 		WithArgs("listen_addresses").
 		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("*"))
@@ -537,7 +537,7 @@ func TestCheck_5_2_ZalandoAcceptsStar(t *testing.T) {
 		t.Fatal(err)
 	}
 	if result.Status != domain.StatusPass {
-		t.Errorf("expected PASS for listen_addresses=* on zalando, got %s", result.Status)
+		t.Errorf("expected PASS for listen_addresses=* on kubernetes, got %s", result.Status)
 	}
 }
 
@@ -834,6 +834,94 @@ func TestCheck_5_1_NoPasswords(t *testing.T) {
 	}
 	if result.Status != domain.StatusPass {
 		t.Errorf("expected PASS when no passwords visible, got %s", result.Status)
+	}
+}
+
+// --- 5.13: HBA ordering audit ---
+
+func TestCheck_5_13_NoShadowing(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []domain.HBAEntry{
+		{LineNumber: 1, Type: "local", Database: "all", User: "postgres", Method: "peer"},
+		{LineNumber: 2, Type: "hostssl", Database: "mydb", User: "appuser", Address: "10.0.1.0/24", Method: "scram-sha-256"},
+	}
+
+	c := &check_5_13{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS when no shadowing, got %s", result.Status)
+	}
+}
+
+func TestCheck_5_13_BroadShadowsReject(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []domain.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "all", Address: "0.0.0.0/0", Method: "scram-sha-256"},
+		{LineNumber: 2, Type: "host", Database: "mydb", User: "baduser", Address: "10.0.0.0/8", Method: "reject"},
+	}
+
+	c := &check_5_13{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL when broad rule shadows reject, got %s", result.Status)
+	}
+}
+
+func TestCheck_5_13_SameDBShadowsReject(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []domain.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "mydb", User: "all", Address: "10.0.0.0/8", Method: "scram-sha-256"},
+		{LineNumber: 2, Type: "host", Database: "mydb", User: "attacker", Address: "10.0.1.0/24", Method: "reject"},
+	}
+
+	c := &check_5_13{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL when user=all shadows specific reject, got %s", result.Status)
+	}
+}
+
+func TestCheck_5_13_RejectBeforePermissive(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []domain.HBAEntry{
+		{LineNumber: 1, Type: "host", Database: "all", User: "baduser", Address: "0.0.0.0/0", Method: "reject"},
+		{LineNumber: 2, Type: "host", Database: "all", User: "all", Address: "10.0.0.0/8", Method: "scram-sha-256"},
+	}
+
+	c := &check_5_13{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// reject before permissive is correct ordering — should pass
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS for correct reject-then-allow ordering, got %s", result.Status)
+	}
+}
+
+func TestCheck_5_13_LocalDoesNotShadowHost(t *testing.T) {
+	_, env := newMockEnv(t)
+	env.HBAEntries = []domain.HBAEntry{
+		{LineNumber: 1, Type: "local", Database: "all", User: "all", Method: "peer"},
+		{LineNumber: 2, Type: "host", Database: "all", User: "baduser", Address: "10.0.0.0/8", Method: "reject"},
+	}
+
+	c := &check_5_13{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS (local cannot shadow host), got %s", result.Status)
 	}
 }
 

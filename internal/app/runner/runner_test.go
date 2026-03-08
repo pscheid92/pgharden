@@ -4,19 +4,21 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 // fakeCheck is a minimal Check for testing the runner.
 type fakeCheck struct {
 	id   string
+	ref  *domain.Reference
 	reqs domain.CheckRequirements
 	res  *domain.CheckResult
 	err  error
 }
 
-func (f *fakeCheck) ID() string                                                         { return f.id }
-func (f *fakeCheck) Requirements() domain.CheckRequirements                             { return f.reqs }
+func (f *fakeCheck) ID() string                    { return f.id }
+func (f *fakeCheck) Reference() *domain.Reference  { return f.ref }
+func (f *fakeCheck) Requirements() domain.CheckRequirements { return f.reqs }
 func (f *fakeCheck) Run(_ context.Context, _ *domain.Environment) (*domain.CheckResult, error) {
 	return f.res, f.err
 }
@@ -291,6 +293,64 @@ func TestRunnerPlatformNotSkippedOnBareMetal(t *testing.T) {
 
 	if len(results) != 1 || results[0].Result.Status != domain.StatusPass {
 		t.Errorf("expected PASS on bare-metal, got %v", results)
+	}
+}
+
+func TestRunnerSourceFilter(t *testing.T) {
+	pass := &domain.CheckResult{Status: domain.StatusPass}
+	checks := []domain.Check{
+		&fakeCheck{id: "1.1", ref: domain.CISRef("1.1"), res: pass},
+		&fakeCheck{id: "1.2", res: pass}, // no reference
+		&fakeCheck{id: "1.3", ref: &domain.Reference{Source: "OWASP", ID: "A1"}, res: pass},
+	}
+
+	r := &Runner{
+		Checks:        checks,
+		Env:           &domain.Environment{PGVersion: 16, Commands: map[string]bool{}},
+		IncludeSource: "cis",
+	}
+	results := r.RunAll(context.Background())
+
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1", len(results))
+	}
+	if results[0].CheckID != "1.1" {
+		t.Errorf("got check %s, want 1.1", results[0].CheckID)
+	}
+}
+
+func TestRunnerSourceFilterCaseInsensitive(t *testing.T) {
+	pass := &domain.CheckResult{Status: domain.StatusPass}
+	checks := []domain.Check{
+		&fakeCheck{id: "1.1", ref: domain.CISRef("1.1"), res: pass},
+	}
+
+	r := &Runner{
+		Checks:        checks,
+		Env:           &domain.Environment{PGVersion: 16, Commands: map[string]bool{}},
+		IncludeSource: "CIS",
+	}
+	results := r.RunAll(context.Background())
+
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1 (case-insensitive match)", len(results))
+	}
+}
+
+func TestRunnerResultIncludesReference(t *testing.T) {
+	ref := domain.CISRef("1.1")
+	checks := []domain.Check{
+		&fakeCheck{id: "1.1", ref: ref, res: &domain.CheckResult{Status: domain.StatusPass}},
+	}
+
+	r := &Runner{Checks: checks, Env: &domain.Environment{PGVersion: 16, Commands: map[string]bool{}}}
+	results := r.RunAll(context.Background())
+
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1", len(results))
+	}
+	if results[0].Reference != ref {
+		t.Errorf("expected reference to be passed through, got %v", results[0].Reference)
 	}
 }
 

@@ -1,15 +1,15 @@
 package checks
 
 import (
-	"github.com/pgharden/pgharden/internal/app/checks/section1"
-	"github.com/pgharden/pgharden/internal/app/checks/section2"
-	"github.com/pgharden/pgharden/internal/app/checks/section3"
-	"github.com/pgharden/pgharden/internal/app/checks/section4"
-	"github.com/pgharden/pgharden/internal/app/checks/section5"
-	"github.com/pgharden/pgharden/internal/app/checks/section6"
-	"github.com/pgharden/pgharden/internal/app/checks/section7"
-	"github.com/pgharden/pgharden/internal/app/checks/section8"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/app/checks/section1"
+	"github.com/pscheid92/pgharden/internal/app/checks/section2"
+	"github.com/pscheid92/pgharden/internal/app/checks/section3"
+	"github.com/pscheid92/pgharden/internal/app/checks/section4"
+	"github.com/pscheid92/pgharden/internal/app/checks/section5"
+	"github.com/pscheid92/pgharden/internal/app/checks/section6"
+	"github.com/pscheid92/pgharden/internal/app/checks/section7"
+	"github.com/pscheid92/pgharden/internal/app/checks/section8"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func All() []domain.Check {

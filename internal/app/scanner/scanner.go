@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/pgharden/pgharden/internal/app/checks"
-	"github.com/pgharden/pgharden/internal/app/report"
-	"github.com/pgharden/pgharden/internal/app/runner"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/app/checks"
+	"github.com/pscheid92/pgharden/internal/app/report"
+	"github.com/pscheid92/pgharden/internal/app/runner"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 const (
@@ -20,6 +20,7 @@ type Options struct {
 	IncludeChecks  []string
 	ExcludeChecks  []string
 	IncludeSection string
+	IncludeSource  string
 	Meta           report.Metadata
 }
 
@@ -37,6 +38,7 @@ func Scan(ctx context.Context, env *domain.Environment, opts Options) *Result {
 		IncludeChecks:  opts.IncludeChecks,
 		ExcludeChecks:  opts.ExcludeChecks,
 		IncludeSection: opts.IncludeSection,
+		IncludeSource:  opts.IncludeSource,
 	}
 
 	slog.Info("running checks", "count", len(allChecks))

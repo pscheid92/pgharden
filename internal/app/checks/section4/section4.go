@@ -5,14 +5,16 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func Checks() []domain.Check {
 	return []domain.Check{
 		&check_4_1{},
+		&check_4_2{},
 		&check_4_3{},
 		&check_4_4{},
 		&check_4_5{},
@@ -25,7 +27,8 @@ func Checks() []domain.Check {
 
 type check_4_1 struct{}
 
-func (c *check_4_1) ID() string { return "4.1" }
+func (c *check_4_1) ID() string          { return "4.1" }
+func (c *check_4_1) Reference() *domain.Reference { return domain.CISRef("4.1") }
 
 func (c *check_4_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -73,9 +76,74 @@ func (c *check_4_1) Run(ctx context.Context, env *domain.Environment) (*domain.C
 	return result, nil
 }
 
+type check_4_2 struct{}
+
+func (c *check_4_2) ID() string          { return "4.2" }
+func (c *check_4_2) Reference() *domain.Reference { return domain.CISRef("4.2") }
+
+func (c *check_4_2) Requirements() domain.CheckRequirements {
+	return domain.CheckRequirements{SQLOnly: true, Superuser: true}
+}
+
+func (c *check_4_2) Run(ctx context.Context, env *domain.Environment) (*domain.CheckResult, error) {
+	rows, err := env.DB.Query(ctx, `
+		SELECT rolname, rolvaliduntil
+		FROM pg_authid
+		WHERE rolcanlogin AND NOT rolsuper
+		ORDER BY rolname`)
+	if err != nil {
+		return nil, fmt.Errorf("query role password expiration: %w", err)
+	}
+	defer rows.Close()
+
+	result := domain.NewResult(domain.SeverityWarning)
+	details := [][]string{{"Role", "Password Valid Until", "Status"}}
+	noExpiry := 0
+	expired := 0
+	total := 0
+
+	now := time.Now()
+	for rows.Next() {
+		var name string
+		var validUntil *time.Time
+		if err := rows.Scan(&name, &validUntil); err != nil {
+			return nil, fmt.Errorf("scan role expiration: %w", err)
+		}
+		total++
+
+		if validUntil == nil {
+			noExpiry++
+			details = append(details, []string{name, "never", "no expiration set"})
+		} else if validUntil.Before(now) {
+			expired++
+			details = append(details, []string{name, validUntil.Format(time.DateOnly), "EXPIRED"})
+		} else {
+			details = append(details, []string{name, validUntil.Format(time.DateOnly), "ok"})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate role expirations: %w", err)
+	}
+
+	result.Details = details
+
+	if expired > 0 {
+		result.FailWarn(fmt.Sprintf("Found %d login roles with expired passwords.", expired))
+	}
+	if noExpiry > 0 {
+		result.FailWarn(fmt.Sprintf("Found %d login roles with no password expiration set.", noExpiry))
+	}
+	if expired == 0 && noExpiry == 0 {
+		result.Pass(fmt.Sprintf("All %d login roles have valid password expiration dates.", total))
+	}
+
+	return result, nil
+}
+
 type check_4_3 struct{}
 
-func (c *check_4_3) ID() string { return "4.3" }
+func (c *check_4_3) ID() string          { return "4.3" }
+func (c *check_4_3) Reference() *domain.Reference { return domain.CISRef("4.3") }
 
 func (c *check_4_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -119,7 +187,8 @@ func (c *check_4_3) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_4 struct{}
 
-func (c *check_4_4) ID() string { return "4.4" }
+func (c *check_4_4) ID() string          { return "4.4" }
+func (c *check_4_4) Reference() *domain.Reference { return domain.CISRef("4.4") }
 
 func (c *check_4_4) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -164,7 +233,8 @@ func (c *check_4_4) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_5 struct{}
 
-func (c *check_4_5) ID() string { return "4.5" }
+func (c *check_4_5) ID() string          { return "4.5" }
+func (c *check_4_5) Reference() *domain.Reference { return domain.CISRef("4.5") }
 
 func (c *check_4_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -222,7 +292,8 @@ func (c *check_4_5) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_6 struct{}
 
-func (c *check_4_6) ID() string { return "4.6" }
+func (c *check_4_6) ID() string          { return "4.6" }
+func (c *check_4_6) Reference() *domain.Reference { return domain.CISRef("4.6") }
 
 func (c *check_4_6) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -270,7 +341,8 @@ func (c *check_4_6) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_7 struct{}
 
-func (c *check_4_7) ID() string { return "4.7" }
+func (c *check_4_7) ID() string          { return "4.7" }
+func (c *check_4_7) Reference() *domain.Reference { return domain.CISRef("4.7") }
 
 func (c *check_4_7) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -320,7 +392,8 @@ func (c *check_4_7) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_8 struct{}
 
-func (c *check_4_8) ID() string { return "4.8" }
+func (c *check_4_8) ID() string          { return "4.8" }
+func (c *check_4_8) Reference() *domain.Reference { return domain.CISRef("4.8") }
 
 func (c *check_4_8) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, Superuser: true}
@@ -381,7 +454,8 @@ func (c *check_4_8) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_4_10 struct{}
 
-func (c *check_4_10) ID() string { return "4.10" }
+func (c *check_4_10) ID() string          { return "4.10" }
+func (c *check_4_10) Reference() *domain.Reference { return domain.CISRef("4.10") }
 
 func (c *check_4_10) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}

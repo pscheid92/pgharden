@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 var errNoAccess = errors.New("requires filesystem access or pg_read_server_files role")
@@ -54,7 +54,8 @@ func Checks() []domain.Check {
 
 type check_1_1 struct{}
 
-func (c *check_1_1) ID() string { return "1.1" }
+func (c *check_1_1) ID() string          { return "1.1" }
+func (c *check_1_1) Reference() *domain.Reference { return domain.CISRef("1.1") }
 
 func (c *check_1_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.NonBareMetal}
@@ -66,7 +67,8 @@ func (c *check_1_1) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_2 struct{}
 
-func (c *check_1_2) ID() string { return "1.2" }
+func (c *check_1_2) ID() string          { return "1.2" }
+func (c *check_1_2) Reference() *domain.Reference { return domain.CISRef("1.2") }
 
 func (c *check_1_2) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Commands: []string{"systemctl"}, SkipPlatforms: domain.NonBareMetal}
@@ -98,7 +100,8 @@ func (c *check_1_2) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_3 struct{}
 
-func (c *check_1_3) ID() string { return "1.3" }
+func (c *check_1_3) ID() string          { return "1.3" }
+func (c *check_1_3) Reference() *domain.Reference { return domain.CISRef("1.3") }
 
 func (c *check_1_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.NonBareMetal}
@@ -124,7 +127,8 @@ func (c *check_1_3) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_5 struct{}
 
-func (c *check_1_5) ID() string { return "1.5" }
+func (c *check_1_5) ID() string          { return "1.5" }
+func (c *check_1_5) Reference() *domain.Reference { return domain.CISRef("1.5") }
 
 func (c *check_1_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{}
@@ -136,7 +140,8 @@ func (c *check_1_5) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_6 struct{}
 
-func (c *check_1_6) ID() string { return "1.6" }
+func (c *check_1_6) ID() string          { return "1.6" }
+func (c *check_1_6) Reference() *domain.Reference { return domain.CISRef("1.6") }
 
 func (c *check_1_6) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -182,7 +187,8 @@ func (c *check_1_6) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_7 struct{}
 
-func (c *check_1_7) ID() string { return "1.7" }
+func (c *check_1_7) ID() string          { return "1.7" }
+func (c *check_1_7) Reference() *domain.Reference { return domain.CISRef("1.7") }
 
 func (c *check_1_7) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -230,7 +236,8 @@ func (c *check_1_7) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_8 struct{}
 
-func (c *check_1_8) ID() string { return "1.8" }
+func (c *check_1_8) ID() string          { return "1.8" }
+func (c *check_1_8) Reference() *domain.Reference { return domain.CISRef("1.8") }
 
 func (c *check_1_8) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -272,7 +279,8 @@ func (c *check_1_8) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_9 struct{}
 
-func (c *check_1_9) ID() string { return "1.9" }
+func (c *check_1_9) ID() string          { return "1.9" }
+func (c *check_1_9) Reference() *domain.Reference { return domain.CISRef("1.9") }
 
 func (c *check_1_9) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, SkipPlatforms: domain.ManagedCloud}
@@ -317,7 +325,8 @@ func (c *check_1_9) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_1_1_1 struct{}
 
-func (c *check_1_1_1) ID() string { return "1.1.1" }
+func (c *check_1_1_1) ID() string          { return "1.1.1" }
+func (c *check_1_1_1) Reference() *domain.Reference { return domain.CISRef("1.1.1") }
 
 func (c *check_1_1_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.NonBareMetal}
@@ -354,7 +363,8 @@ func (c *check_1_1_1) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_1_4_1 struct{}
 
-func (c *check_1_4_1) ID() string { return "1.4.1" }
+func (c *check_1_4_1) ID() string          { return "1.4.1" }
+func (c *check_1_4_1) Reference() *domain.Reference { return domain.CISRef("1.4.1") }
 
 func (c *check_1_4_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.NonBareMetal}
@@ -386,7 +396,8 @@ func (c *check_1_4_1) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_1_4_2 struct{}
 
-func (c *check_1_4_2) ID() string { return "1.4.2" }
+func (c *check_1_4_2) ID() string          { return "1.4.2" }
+func (c *check_1_4_2) Reference() *domain.Reference { return domain.CISRef("1.4.2") }
 
 func (c *check_1_4_2) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.NonBareMetal}
@@ -432,7 +443,8 @@ func (c *check_1_4_2) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_1_4_3 struct{}
 
-func (c *check_1_4_3) ID() string { return "1.4.3" }
+func (c *check_1_4_3) ID() string          { return "1.4.3" }
+func (c *check_1_4_3) Reference() *domain.Reference { return domain.CISRef("1.4.3") }
 
 func (c *check_1_4_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -455,7 +467,8 @@ func (c *check_1_4_3) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_1_4_4 struct{}
 
-func (c *check_1_4_4) ID() string { return "1.4.4" }
+func (c *check_1_4_4) ID() string          { return "1.4.4" }
+func (c *check_1_4_4) Reference() *domain.Reference { return domain.CISRef("1.4.4") }
 
 func (c *check_1_4_4) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -489,7 +502,8 @@ func (c *check_1_4_4) Run(ctx context.Context, env *domain.Environment) (*domain
 
 type check_1_4_5 struct{}
 
-func (c *check_1_4_5) ID() string { return "1.4.5" }
+func (c *check_1_4_5) ID() string          { return "1.4.5" }
+func (c *check_1_4_5) Reference() *domain.Reference { return domain.CISRef("1.4.5") }
 
 func (c *check_1_4_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}

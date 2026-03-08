@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 type Runner struct {
@@ -16,6 +17,7 @@ type Runner struct {
 	IncludeChecks  []string       // If non-empty, only run these check IDs.
 	ExcludeChecks  []string       // Skip these check IDs.
 	IncludeSection string         // If set, only run checks in this section (e.g., "3").
+	IncludeSource  string         // If set, only run checks from this source (e.g., "cis").
 }
 
 func (r *Runner) RunAll(ctx context.Context) []domain.RunResult {
@@ -56,16 +58,26 @@ func (r *Runner) shouldSkip(c domain.Check) bool {
 		}
 	}
 
+	// Source filter
+	if r.IncludeSource != "" {
+		ref := c.Reference()
+		if ref == nil || !strings.Contains(strings.ToLower(ref.Source), strings.ToLower(r.IncludeSource)) {
+			return true
+		}
+	}
+
 	return false
 }
 
 func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 	id := c.ID()
+	ref := c.Reference()
 	requirements := c.Requirements()
 
 	if len(requirements.SkipPlatforms) > 0 && slices.Contains(requirements.SkipPlatforms, r.Env.Platform) {
 		return domain.RunResult{
-			CheckID: id,
+			CheckID:   id,
+			Reference: ref,
 			Result: &domain.CheckResult{
 				Status:     domain.StatusSkipped,
 				SkipReason: fmt.Sprintf("Not applicable on platform: %s", r.Env.Platform),
@@ -75,7 +87,8 @@ func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 
 	if requirements.MinPGVersion > 0 && r.Env.PGVersion < requirements.MinPGVersion {
 		return domain.RunResult{
-			CheckID: id,
+			CheckID:   id,
+			Reference: ref,
 			Result: &domain.CheckResult{
 				Status:     domain.StatusSkipped,
 				SkipReason: fmt.Sprintf("Requires PostgreSQL %d+, running %d", requirements.MinPGVersion, r.Env.PGVersion),
@@ -85,7 +98,8 @@ func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 
 	if requirements.Superuser && !r.Env.IsSuperuser && !r.Env.IsRDSSuperuser {
 		return domain.RunResult{
-			CheckID: id,
+			CheckID:   id,
+			Reference: ref,
 			Result: &domain.CheckResult{
 				Status:     domain.StatusSkipped,
 				SkipReason: "Requires superuser privileges",
@@ -95,7 +109,8 @@ func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 
 	if requirements.PGMonitor && !r.Env.IsPGMonitor && !r.Env.IsSuperuser {
 		return domain.RunResult{
-			CheckID: id,
+			CheckID:   id,
+			Reference: ref,
 			Result: &domain.CheckResult{
 				Status:     domain.StatusSkipped,
 				SkipReason: "Requires pg_monitor or superuser privileges",
@@ -105,7 +120,8 @@ func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 
 	if requirements.Filesystem && !r.Env.HasFilesystem {
 		return domain.RunResult{
-			CheckID: id,
+			CheckID:   id,
+			Reference: ref,
 			Result: &domain.CheckResult{
 				Status:     domain.StatusSkipped,
 				SkipReason: "Requires filesystem access (not available in this environment)",
@@ -128,13 +144,14 @@ func (r *Runner) runOne(ctx context.Context, c domain.Check) domain.RunResult {
 	result, err := c.Run(ctx, r.Env)
 	if errors.Is(err, domain.ErrPermissionDenied) {
 		return domain.RunResult{
-			CheckID: id,
-			Result:  &domain.CheckResult{Status: domain.StatusSkipped, SkipReason: "Insufficient privileges"},
+			CheckID:   id,
+			Reference: ref,
+			Result:    &domain.CheckResult{Status: domain.StatusSkipped, SkipReason: "Insufficient privileges"},
 		}
 	}
 	if err != nil {
 		result = &domain.CheckResult{Status: domain.StatusFail, Severity: domain.SeverityCritical}
 		result.Critical(err.Error())
 	}
-	return domain.RunResult{CheckID: id, Result: result}
+	return domain.RunResult{CheckID: id, Reference: ref, Result: result}
 }

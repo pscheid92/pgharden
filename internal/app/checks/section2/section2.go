@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func Checks() []domain.Check {
@@ -29,6 +29,8 @@ func Checks() []domain.Check {
 type check_2_1 struct{}
 
 func (c *check_2_1) ID() string { return "2.1" }
+
+func (c *check_2_1) Reference() *domain.Reference { return domain.CISRef("2.1") }
 
 func (c *check_2_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Commands: []string{"sh"}, SkipPlatforms: domain.NonBareMetal}
@@ -55,6 +57,8 @@ func (c *check_2_1) Run(ctx context.Context, env *domain.Environment) (*domain.C
 type check_2_2 struct{}
 
 func (c *check_2_2) ID() string { return "2.2" }
+
+func (c *check_2_2) Reference() *domain.Reference { return domain.CISRef("2.2") }
 
 func (c *check_2_2) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -118,6 +122,8 @@ type check_2_3 struct{}
 
 func (c *check_2_3) ID() string { return "2.3" }
 
+func (c *check_2_3) Reference() *domain.Reference { return domain.CISRef("2.3") }
+
 func (c *check_2_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
 }
@@ -180,6 +186,8 @@ type check_2_4 struct{}
 
 func (c *check_2_4) ID() string { return "2.4" }
 
+func (c *check_2_4) Reference() *domain.Reference { return domain.CISRef("2.4") }
+
 func (c *check_2_4) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
 }
@@ -236,6 +244,8 @@ type check_2_5 struct{}
 
 func (c *check_2_5) ID() string { return "2.5" }
 
+func (c *check_2_5) Reference() *domain.Reference { return domain.CISRef("2.5") }
+
 func (c *check_2_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
 }
@@ -267,6 +277,8 @@ func (c *check_2_5) Run(ctx context.Context, env *domain.Environment) (*domain.C
 type check_2_6 struct{}
 
 func (c *check_2_6) ID() string { return "2.6" }
+
+func (c *check_2_6) Reference() *domain.Reference { return domain.CISRef("2.6") }
 
 func (c *check_2_6) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
@@ -315,6 +327,8 @@ type check_2_7 struct{}
 
 func (c *check_2_7) ID() string { return "2.7" }
 
+func (c *check_2_7) Reference() *domain.Reference { return domain.CISRef("2.7") }
+
 func (c *check_2_7) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}
 }
@@ -340,6 +354,8 @@ func (c *check_2_7) Run(ctx context.Context, env *domain.Environment) (*domain.C
 type check_2_8 struct{}
 
 func (c *check_2_8) ID() string { return "2.8" }
+
+func (c *check_2_8) Reference() *domain.Reference { return domain.CISRef("2.8") }
 
 func (c *check_2_8) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Filesystem: true, SkipPlatforms: domain.NonBareMetal}

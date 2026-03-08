@@ -1,6 +1,6 @@
 package hba
 
-import "github.com/pgharden/pgharden/internal/domain"
+import "github.com/pscheid92/pgharden/internal/domain"
 
 type Entry = domain.HBAEntry
 

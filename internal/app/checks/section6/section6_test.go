@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *domain.Environment) {
@@ -317,6 +317,100 @@ func TestCheck_6_10_ManagedCloudPassesCiphers(t *testing.T) {
 	}
 	if result.Status != domain.StatusPass {
 		t.Errorf("expected PASS on RDS (ciphers managed by AWS), got %s", result.Status)
+	}
+}
+
+// --- 6.12-6.14: timeout settings ---
+
+func TestCheck_6_12_IdleInTransactionTimeout_Configured(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("idle_in_transaction_session_timeout").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("60000"))
+
+	checks := Checks()
+	var check domain.Check
+	for _, c := range checks {
+		if c.ID() == "6.12" {
+			check = c
+			break
+		}
+	}
+	result, err := check.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS for non-zero idle_in_transaction_session_timeout, got %s", result.Status)
+	}
+}
+
+func TestCheck_6_12_IdleInTransactionTimeout_Disabled(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("idle_in_transaction_session_timeout").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("0"))
+
+	checks := Checks()
+	var check domain.Check
+	for _, c := range checks {
+		if c.ID() == "6.12" {
+			check = c
+			break
+		}
+	}
+	result, err := check.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL for disabled idle_in_transaction_session_timeout, got %s", result.Status)
+	}
+}
+
+func TestCheck_6_13_StatementTimeout_Configured(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("statement_timeout").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("30000"))
+
+	checks := Checks()
+	var check domain.Check
+	for _, c := range checks {
+		if c.ID() == "6.13" {
+			check = c
+			break
+		}
+	}
+	result, err := check.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS for non-zero statement_timeout, got %s", result.Status)
+	}
+}
+
+func TestCheck_6_14_LockTimeout_Disabled(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT setting FROM pg_settings").
+		WithArgs("lock_timeout").
+		WillReturnRows(pgxmock.NewRows([]string{"setting"}).AddRow("0"))
+
+	checks := Checks()
+	var check domain.Check
+	for _, c := range checks {
+		if c.ID() == "6.14" {
+			check = c
+			break
+		}
+	}
+	result, err := check.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL for disabled lock_timeout, got %s", result.Status)
 	}
 }
 

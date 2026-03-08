@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 	"testing/fstest"
+	"time"
 
 	"github.com/pashagolub/pgxmock/v4"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *domain.Environment) {
@@ -17,6 +18,83 @@ func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *domain.Environment) {
 	}
 	t.Cleanup(func() { _ = mock.Close(context.Background()) })
 	return mock, &domain.Environment{DB: mock, PGVersion: 16}
+}
+
+// --- 4.2: password expiration ---
+
+func TestCheck_4_2_AllHaveExpiration(t *testing.T) {
+	mock, env := newMockEnv(t)
+	future := time.Now().Add(30 * 24 * time.Hour)
+	mock.ExpectQuery("SELECT rolname, rolvaliduntil").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname", "rolvaliduntil"}).
+			AddRow("appuser", &future).
+			AddRow("reader", &future))
+
+	c := &check_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusPass {
+		t.Errorf("expected PASS when all roles have valid expiration, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_2_NoExpiration(t *testing.T) {
+	mock, env := newMockEnv(t)
+	mock.ExpectQuery("SELECT rolname, rolvaliduntil").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname", "rolvaliduntil"}).
+			AddRow("appuser", nil))
+
+	c := &check_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL for role with no expiration, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_2_ExpiredPassword(t *testing.T) {
+	mock, env := newMockEnv(t)
+	past := time.Now().Add(-30 * 24 * time.Hour)
+	mock.ExpectQuery("SELECT rolname, rolvaliduntil").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname", "rolvaliduntil"}).
+			AddRow("olduser", &past))
+
+	c := &check_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL for expired password, got %s", result.Status)
+	}
+}
+
+func TestCheck_4_2_MixedExpiration(t *testing.T) {
+	mock, env := newMockEnv(t)
+	future := time.Now().Add(30 * 24 * time.Hour)
+	past := time.Now().Add(-30 * 24 * time.Hour)
+	mock.ExpectQuery("SELECT rolname, rolvaliduntil").
+		WillReturnRows(pgxmock.NewRows([]string{"rolname", "rolvaliduntil"}).
+			AddRow("gooduser", &future).
+			AddRow("expireduser", &past).
+			AddRow("noexpiry", nil))
+
+	c := &check_4_2{}
+	result, err := c.Run(context.Background(), env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != domain.StatusFail {
+		t.Errorf("expected FAIL for mixed expiration states, got %s", result.Status)
+	}
+	// Should have header + 3 roles
+	if len(result.Details) != 4 {
+		t.Errorf("expected 4 detail rows (header + 3), got %d", len(result.Details))
+	}
 }
 
 func TestCheck_4_3_SingleSuperuser(t *testing.T) {

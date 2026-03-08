@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pgharden/pgharden/internal/domain"
-	"github.com/pgharden/pgharden/internal/app/hba"
+	"github.com/pscheid92/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/app/hba"
 )
 
 func Checks() []domain.Check {
@@ -28,38 +28,42 @@ func Checks() []domain.Check {
 		&check_5_10{},
 		&check_5_11{},
 		&check_5_12{},
+		&check_5_13{},
 	}
 }
 
 func ensureHBA(ctx context.Context, env *domain.Environment) error {
 	if env.HBALoaded {
-		return nil
+		return env.HBAError
 	}
-	if env.PGVersion >= 15 {
+	env.HBALoaded = true
+	// Only attempt pg_hba_file_rules if user has privileges (superuser or pg_read_all_settings).
+	// Without this guard, the query generates ERROR entries in the postgres log.
+	if env.PGVersion >= 15 && (env.IsSuperuser || env.IsRDSSuperuser) {
 		entries, err := hba.LoadFromSQL(ctx, env.DB)
 		if err == nil {
 			env.HBAEntries = entries
-			env.HBALoaded = true
 			return nil
 		}
 	}
 	if env.HasFilesystem {
 		var hbaFile string
-		if err := env.DB.QueryRow(ctx, "SHOW hba_file").Scan(&hbaFile); err == nil && hbaFile != "" {
+		if err := env.DB.QueryRow(ctx, "SELECT setting FROM pg_settings WHERE name = 'hba_file'").Scan(&hbaFile); err == nil && hbaFile != "" {
 			entries, err := hba.LoadFromFile(env.GetFS(), hbaFile)
 			if err == nil {
 				env.HBAEntries = entries
-				env.HBALoaded = true
 				return nil
 			}
 		}
 	}
-	return fmt.Errorf("cannot load pg_hba.conf")
+	env.HBAError = fmt.Errorf("cannot load pg_hba.conf")
+	return env.HBAError
 }
 
 type check_5_1 struct{}
 
-func (c *check_5_1) ID() string { return "5.1" }
+func (c *check_5_1) ID() string        { return "5.1" }
+func (c *check_5_1) Reference() *domain.Reference { return domain.CISRef("5.1") }
 
 func (c *check_5_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Commands: []string{"ps"}, SkipPlatforms: domain.NonBareMetal}
@@ -97,7 +101,8 @@ func (c *check_5_1) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_2 struct{}
 
-func (c *check_5_2) ID() string { return "5.2" }
+func (c *check_5_2) ID() string        { return "5.2" }
+func (c *check_5_2) Reference() *domain.Reference { return domain.CISRef("5.2") }
 
 func (c *check_5_2) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, SkipPlatforms: domain.ManagedCloud}
@@ -112,8 +117,8 @@ func (c *check_5_2) Run(ctx context.Context, env *domain.Environment) (*domain.C
 	result := domain.NewResult(domain.SeverityCritical)
 
 	if listenAddr == "*" || listenAddr == "0.0.0.0" {
-		// On container/zalando, listen_addresses='*' is expected (network policy controls access)
-		if env.Platform == domain.PlatformContainer || env.Platform == domain.PlatformZalando {
+		// On container/kubernetes, listen_addresses='*' is expected (network policy controls access)
+		if env.Platform == domain.PlatformContainer || env.Platform == domain.PlatformKubernetes {
 			result.Pass(fmt.Sprintf("listen_addresses is '%s' (acceptable on %s; network policy controls access)", listenAddr, env.Platform))
 		} else {
 			result.Critical(fmt.Sprintf("listen_addresses is set to '%s', which listens on all interfaces. Restrict to specific addresses.", listenAddr))
@@ -127,7 +132,8 @@ func (c *check_5_2) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_3 struct{}
 
-func (c *check_5_3) ID() string { return "5.3" }
+func (c *check_5_3) ID() string        { return "5.3" }
+func (c *check_5_3) Reference() *domain.Reference { return domain.CISRef("5.3") }
 
 func (c *check_5_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
@@ -172,7 +178,8 @@ func (c *check_5_3) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_4 struct{}
 
-func (c *check_5_4) ID() string { return "5.4" }
+func (c *check_5_4) ID() string        { return "5.4" }
+func (c *check_5_4) Reference() *domain.Reference { return domain.CISRef("5.4") }
 
 func (c *check_5_4) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
@@ -217,7 +224,8 @@ func (c *check_5_4) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_5 struct{}
 
-func (c *check_5_5) ID() string { return "5.5" }
+func (c *check_5_5) ID() string        { return "5.5" }
+func (c *check_5_5) Reference() *domain.Reference { return domain.CISRef("5.5") }
 
 func (c *check_5_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -256,7 +264,8 @@ func (c *check_5_5) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_6 struct{}
 
-func (c *check_5_6) ID() string { return "5.6" }
+func (c *check_5_6) ID() string        { return "5.6" }
+func (c *check_5_6) Reference() *domain.Reference { return domain.CISRef("5.6") }
 
 func (c *check_5_6) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -292,7 +301,8 @@ func (c *check_5_6) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_7 struct{}
 
-func (c *check_5_7) ID() string { return "5.7" }
+func (c *check_5_7) ID() string        { return "5.7" }
+func (c *check_5_7) Reference() *domain.Reference { return domain.CISRef("5.7") }
 
 func (c *check_5_7) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -347,7 +357,8 @@ func (c *check_5_7) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_8 struct{}
 
-func (c *check_5_8) ID() string { return "5.8" }
+func (c *check_5_8) ID() string        { return "5.8" }
+func (c *check_5_8) Reference() *domain.Reference { return domain.CISRef("5.8") }
 
 func (c *check_5_8) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
@@ -385,7 +396,8 @@ func (c *check_5_8) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_9 struct{}
 
-func (c *check_5_9) ID() string { return "5.9" }
+func (c *check_5_9) ID() string        { return "5.9" }
+func (c *check_5_9) Reference() *domain.Reference { return domain.CISRef("5.9") }
 
 func (c *check_5_9) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
@@ -444,7 +456,8 @@ func (c *check_5_9) Run(ctx context.Context, env *domain.Environment) (*domain.C
 
 type check_5_10 struct{}
 
-func (c *check_5_10) ID() string { return "5.10" }
+func (c *check_5_10) ID() string        { return "5.10" }
+func (c *check_5_10) Reference() *domain.Reference { return domain.CISRef("5.10") }
 
 func (c *check_5_10) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
@@ -478,7 +491,8 @@ func (c *check_5_10) Run(ctx context.Context, env *domain.Environment) (*domain.
 
 type check_5_11 struct{}
 
-func (c *check_5_11) ID() string { return "5.11" }
+func (c *check_5_11) ID() string        { return "5.11" }
+func (c *check_5_11) Reference() *domain.Reference { return domain.CISRef("5.11") }
 
 func (c *check_5_11) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{Superuser: true, SkipPlatforms: domain.ManagedCloud}
@@ -531,7 +545,8 @@ func (c *check_5_11) Run(ctx context.Context, env *domain.Environment) (*domain.
 
 type check_5_12 struct{}
 
-func (c *check_5_12) ID() string { return "5.12" }
+func (c *check_5_12) ID() string        { return "5.12" }
+func (c *check_5_12) Reference() *domain.Reference { return domain.CISRef("5.12") }
 
 func (c *check_5_12) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}
@@ -552,6 +567,112 @@ func (c *check_5_12) Run(ctx context.Context, env *domain.Environment) (*domain.
 	}
 
 	return result, nil
+}
+
+type check_5_13 struct{}
+
+func (c *check_5_13) ID() string        { return "5.13" }
+func (c *check_5_13) Reference() *domain.Reference { return domain.CISRef("5.13") }
+
+func (c *check_5_13) Requirements() domain.CheckRequirements {
+	return domain.CheckRequirements{SkipPlatforms: domain.ManagedCloud}
+}
+
+func (c *check_5_13) Run(ctx context.Context, env *domain.Environment) (*domain.CheckResult, error) {
+	if err := ensureHBA(ctx, env); err != nil {
+		return domain.SkippedHBA(err), nil
+	}
+
+	result := domain.NewResult(domain.SeverityWarning)
+
+	// For each pair of entries, check if a broad permissive rule shadows a later restrictive one.
+	for i, broad := range env.HBAEntries {
+		if broad.Method == "reject" {
+			continue
+		}
+
+		for j := i + 1; j < len(env.HBAEntries); j++ {
+			narrow := env.HBAEntries[j]
+
+			// Only flag if the later rule is more restrictive (reject, or narrower scope)
+			if !hbaCouldShadow(broad, narrow) {
+				continue
+			}
+
+			result.FailWarn(fmt.Sprintf(
+				"Line %d (%s db=%s user=%s addr=%s method=%s) shadows line %d (%s db=%s user=%s addr=%s method=%s)",
+				broad.LineNumber, broad.Type, broad.Database, broad.User, broad.Address, broad.Method,
+				narrow.LineNumber, narrow.Type, narrow.Database, narrow.User, narrow.Address, narrow.Method,
+			))
+		}
+	}
+
+	if result.Status != domain.StatusFail {
+		result.Pass("No permissive HBA rules shadow later restrictive rules")
+	}
+	return result, nil
+}
+
+// hbaCouldShadow returns true if 'broad' could shadow 'narrow' because broad
+// matches a superset of connections and is more permissive.
+func hbaCouldShadow(broad, narrow domain.HBAEntry) bool {
+	// Type must be compatible (both local, or both host-family)
+	if broad.Type == "local" && narrow.Type != "local" {
+		return false
+	}
+	if broad.Type != "local" && narrow.Type == "local" {
+		return false
+	}
+
+	// The broad rule must match at least everything the narrow rule matches.
+	if !fieldCovers(broad.Database, narrow.Database) {
+		return false
+	}
+	if !fieldCovers(broad.User, narrow.User) {
+		return false
+	}
+
+	// For host entries, check address coverage.
+	if broad.Type != "local" {
+		if !addressCovers(broad.Address, narrow.Address) {
+			return false
+		}
+	}
+
+	// The broad rule must be more permissive than the narrow rule.
+	// Flag when: broad allows access (not reject) and narrow denies/restricts it.
+	if narrow.Method == "reject" {
+		return true
+	}
+
+	return false
+}
+
+// fieldCovers returns true if 'broad' covers 'narrow' (e.g., "all" covers anything).
+func fieldCovers(broad, narrow string) bool {
+	if broad == "all" {
+		return true
+	}
+	return broad == narrow
+}
+
+// addressCovers returns true if the broad address range includes the narrow range.
+func addressCovers(broad, narrow string) bool {
+	if broad == "all" || broad == "0.0.0.0/0" || broad == "::/0" {
+		return true
+	}
+	if broad == narrow {
+		return true
+	}
+
+	broadPrefix, err1 := netip.ParsePrefix(broad)
+	narrowPrefix, err2 := netip.ParsePrefix(narrow)
+	if err1 != nil || err2 != nil {
+		return broad == narrow
+	}
+
+	// broad covers narrow if broad contains narrow's first address and broad's prefix is shorter.
+	return broadPrefix.Contains(narrowPrefix.Addr()) && broadPrefix.Bits() <= narrowPrefix.Bits()
 }
 
 func parsePGInterval(val string) (int, error) {

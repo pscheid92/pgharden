@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func Checks() []domain.Check {
@@ -19,8 +19,10 @@ type check_8_2 struct{}
 
 func (c *check_8_2) ID() string { return "8.2" }
 
+func (c *check_8_2) Reference() *domain.Reference { return domain.CISRef("8.2") }
+
 func (c *check_8_2) Requirements() domain.CheckRequirements {
-	return domain.CheckRequirements{Commands: []string{"pgbackrest"}, SkipPlatforms: []string{domain.PlatformZalando, domain.PlatformRDS, domain.PlatformAurora}}
+	return domain.CheckRequirements{Commands: []string{"pgbackrest"}, SkipPlatforms: []string{domain.PlatformKubernetes, domain.PlatformRDS, domain.PlatformAurora}}
 }
 
 func (c *check_8_2) Run(ctx context.Context, env *domain.Environment) (*domain.CheckResult, error) {
@@ -45,6 +47,8 @@ func (c *check_8_2) Run(ctx context.Context, env *domain.Environment) (*domain.C
 type check_8_3 struct{}
 
 func (c *check_8_3) ID() string { return "8.3" }
+
+func (c *check_8_3) Reference() *domain.Reference { return domain.CISRef("8.3") }
 
 func (c *check_8_3) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true}

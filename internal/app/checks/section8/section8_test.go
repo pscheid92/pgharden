@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func newMockEnv(t *testing.T) (pgxmock.PgxConnIface, *domain.Environment) {

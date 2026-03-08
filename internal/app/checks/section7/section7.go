@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/pgharden/pgharden/internal/domain"
+	"github.com/pscheid92/pgharden/internal/domain"
 )
 
 func Checks() []domain.Check {
@@ -16,6 +16,7 @@ func Checks() []domain.Check {
 		&domain.SettingCheck{
 			CheckID: "7.2", Setting: "log_replication_commands", Expected: "on",
 			Sev: domain.SeverityWarning, Reqs: domain.CheckRequirements{SQLOnly: true},
+			Ref: domain.CISRef("7.2"),
 		}, // 7.2 runs on all platforms per matrix
 		&check_7_4{},
 		&check_7_5{},
@@ -25,6 +26,8 @@ func Checks() []domain.Check {
 type check_7_1 struct{}
 
 func (c *check_7_1) ID() string { return "7.1" }
+
+func (c *check_7_1) Reference() *domain.Reference { return domain.CISRef("7.1") }
 
 func (c *check_7_1) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, SkipPlatforms: []string{domain.PlatformAurora}}
@@ -97,6 +100,8 @@ type check_7_4 struct{}
 
 func (c *check_7_4) ID() string { return "7.4" }
 
+func (c *check_7_4) Reference() *domain.Reference { return domain.CISRef("7.4") }
+
 func (c *check_7_4) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, SkipPlatforms: domain.ManagedCloud}
 }
@@ -136,6 +141,8 @@ func (c *check_7_4) Run(ctx context.Context, env *domain.Environment) (*domain.C
 type check_7_5 struct{}
 
 func (c *check_7_5) ID() string { return "7.5" }
+
+func (c *check_7_5) Reference() *domain.Reference { return domain.CISRef("7.5") }
 
 func (c *check_7_5) Requirements() domain.CheckRequirements {
 	return domain.CheckRequirements{SQLOnly: true, SkipPlatforms: domain.ManagedCloud}

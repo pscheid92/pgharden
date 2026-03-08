@@ -21,14 +21,14 @@ var ErrPermissionDenied = errors.New("permission denied")
 const (
 	PlatformBareMetal = "bare-metal"
 	PlatformContainer = "container"
-	PlatformZalando   = "zalando"
+	PlatformKubernetes = "kubernetes"
 	PlatformRDS       = "rds"
 	PlatformAurora    = "aurora"
 )
 
 // Platform skip lists for common platform groupings used in CheckRequirements.SkipPlatforms.
 var (
-	NonBareMetal = []string{PlatformContainer, PlatformZalando, PlatformRDS, PlatformAurora}
+	NonBareMetal = []string{PlatformContainer, PlatformKubernetes, PlatformRDS, PlatformAurora}
 	ManagedCloud = []string{PlatformRDS, PlatformAurora}
 )
 
@@ -156,15 +156,32 @@ func SkippedHBA(err error) *CheckResult {
 	}
 }
 
+// Reference identifies the source of a check (e.g., CIS Benchmark, OWASP).
+// Checks without an external source return nil from Check.Reference().
+type Reference struct {
+	Source string `json:"source"`           // e.g., "CIS PostgreSQL 16 Benchmark v1.0.0"
+	ID     string `json:"id"`              // Original ID in that source, e.g., "3.1.20"
+	URL    string `json:"url,omitempty"`   // Optional link to the source documentation
+}
+
+const CISSource = "CIS PostgreSQL 16 Benchmark v1.0.0"
+
+// CISRef returns a Reference for a CIS Benchmark check.
+func CISRef(id string) *Reference {
+	return &Reference{Source: CISSource, ID: id}
+}
+
 type Check interface {
 	ID() string
+	Reference() *Reference
 	Requirements() CheckRequirements
 	Run(ctx context.Context, env *Environment) (*CheckResult, error)
 }
 
 type RunResult struct {
-	CheckID string
-	Result  *CheckResult
+	CheckID   string
+	Reference *Reference
+	Result    *CheckResult
 }
 
 type Environment struct {
@@ -194,6 +211,7 @@ type Environment struct {
 	// Parsed HBA entries (populated before HBA checks run)
 	HBAEntries []HBAEntry
 	HBALoaded  bool
+	HBAError   error
 
 	// Cached data
 	Superusers []string
