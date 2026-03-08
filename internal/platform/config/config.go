@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,13 +24,14 @@ type Config struct {
 	IncludeChecks  []string `yaml:"include_checks"`
 	ExcludeChecks  []string `yaml:"exclude_checks"`
 	IncludeSection string   `yaml:"include_section"`
+	IncludeSource  string   `yaml:"include_source"`
 
 	// Database filtering
 	AllowDatabases   []string `yaml:"allow_databases"`
 	ExcludeDatabases []string `yaml:"exclude_databases"`
 
 	// Environment
-	Platform string `yaml:"platform"` // Override auto-detected platform (bare-metal, container, zalando, rds, aurora).
+	Platform string `yaml:"platform"` // Override auto-detected platform (bare-metal, container, kubernetes, rds, aurora).
 	Local    bool   `yaml:"local"`    // Enable filesystem and command checks (only when running on the PG host).
 
 	// Profiles
@@ -82,6 +84,23 @@ func (c *Config) LoadFile(path string) error {
 		c.IncludeSection = p.IncludeSection
 	}
 
+	return nil
+}
+
+// ResolveDSN parses a DSN string and backfills Host, Port, User, Database
+// so that log messages and report metadata reflect the actual connection target.
+func (c *Config) ResolveDSN() error {
+	if c.DSN == "" {
+		return nil
+	}
+	cfg, err := pgconn.ParseConfig(c.DSN)
+	if err != nil {
+		return fmt.Errorf("parsing DSN: %w", err)
+	}
+	c.Host = cfg.Host
+	c.Port = int(cfg.Port)
+	c.User = cfg.User
+	c.Database = cfg.Database
 	return nil
 }
 

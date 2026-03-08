@@ -1,11 +1,10 @@
-VERSION := 0.1.0
 COMMIT  := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE    := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-BINARY  := pgharden-go
-PKG     := github.com/pgharden/pgharden/internal/buildinfo
-LDFLAGS := -ldflags "-s -w -X $(PKG).Version=$(VERSION) -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE)"
+BINARY  := pgharden
+PKG     := github.com/pscheid92/pgharden/internal/platform/buildinfo
+LDFLAGS := -ldflags "-s -w -X $(PKG).Commit=$(COMMIT) -X $(PKG).Date=$(DATE)"
 
-.PHONY: build test test-unit test-integration lint clean
+.PHONY: build test test-unit test-integration lint cover clean
 
 build:
 	go build $(LDFLAGS) -o $(BINARY) ./cmd/pgharden
@@ -21,5 +20,10 @@ test-integration:
 lint:
 	golangci-lint run ./...
 
+cover:
+	go test -short -race -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out | tail -1
+	go tool cover -html=coverage.out -o coverage.html
+
 clean:
-	rm -f $(BINARY)
+	rm -f $(BINARY) coverage.out coverage.html

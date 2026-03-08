@@ -43,6 +43,46 @@ func TestConnString(t *testing.T) {
 	})
 }
 
+func TestResolveDSN(t *testing.T) {
+	t.Run("no_dsn", func(t *testing.T) {
+		cfg := DefaultConfig()
+		if err := cfg.ResolveDSN(); err != nil {
+			t.Fatal(err)
+		}
+		if cfg.Host != "localhost" {
+			t.Errorf("Host changed to %q without DSN", cfg.Host)
+		}
+	})
+
+	t.Run("dsn_backfills_fields", func(t *testing.T) {
+		cfg := DefaultConfig()
+		cfg.DSN = "postgres://auditor@db.example.com:5433/prod"
+		if err := cfg.ResolveDSN(); err != nil {
+			t.Fatal(err)
+		}
+		if cfg.Host != "db.example.com" {
+			t.Errorf("Host = %q, want db.example.com", cfg.Host)
+		}
+		if cfg.Port != 5433 {
+			t.Errorf("Port = %d, want 5433", cfg.Port)
+		}
+		if cfg.User != "auditor" {
+			t.Errorf("User = %q, want auditor", cfg.User)
+		}
+		if cfg.Database != "prod" {
+			t.Errorf("Database = %q, want prod", cfg.Database)
+		}
+	})
+
+	t.Run("invalid_dsn", func(t *testing.T) {
+		cfg := DefaultConfig()
+		cfg.DSN = "://invalid"
+		if err := cfg.ResolveDSN(); err == nil {
+			t.Error("expected error for invalid DSN")
+		}
+	})
+}
+
 func TestLoadFile(t *testing.T) {
 	yaml := `
 host: myhost

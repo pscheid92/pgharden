@@ -50,6 +50,32 @@ jobs:
           name: coverage-integration
           path: coverage-integration.out
 
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-integration
+      - name: Merge profiles
+        run: |
+          head -1 coverage-unit.out > coverage.out
+          tail -n +2 coverage-unit.out >> coverage.out
+          tail -n +2 coverage-integration.out >> coverage.out
+          go tool cover -func=coverage.out | tail -1
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.out
+          fail_ci_if_error: false
+
   build:
     runs-on: ubuntu-latest
     needs: [lint, test-unit, test-integration]
@@ -60,7 +86,7 @@ jobs:
           go-version: "1.26"
       - name: Build with version
         run: |
-          PKG=github.com/pgharden/pgharden/internal/buildinfo
+          PKG=github.com/pscheid92/pgharden/internal/platform/buildinfo
           VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
           COMMIT=$(git rev-parse --short HEAD)
           DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
